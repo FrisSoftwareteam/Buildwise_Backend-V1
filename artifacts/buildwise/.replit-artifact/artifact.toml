@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "FirstRegistrars BuildWise"
+version = "1.0.0"
+id = "artifacts/buildwise"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21522
+
+[services.development]
+run = "pnpm --filter @workspace/buildwise run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/buildwise", "run", "build" ]
+publicDir = "artifacts/buildwise/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21522"
+BASE_PATH = "/"

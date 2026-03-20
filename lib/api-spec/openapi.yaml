@@ -1,22 +1,35 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FirstRegistrars BuildWise API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Project management
+  - name: tasks
+    description: Task management
+  - name: vendors
+    description: Vendor management
+  - name: users
+    description: User management
+  - name: sprints
+    description: Sprint management
+  - name: comments
+    description: Comments
+  - name: ai
+    description: AI analysis and suggestions
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +37,682 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ---- USERS ----
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---- PROJECTS ----
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [internal, vendor]
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Projects list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    put:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---- TASKS ----
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sprintId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: assigneeId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tasks list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBody"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBody"
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---- SPRINTS ----
+  /projects/{projectId}/sprints:
+    get:
+      operationId: listSprints
+      tags: [sprints]
+      summary: List sprints for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sprints list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sprint"
+    post:
+      operationId: createSprint
+      tags: [sprints]
+      summary: Create a sprint
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSprintBody"
+      responses:
+        "201":
+          description: Created sprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sprint"
+
+  /sprints/{id}:
+    put:
+      operationId: updateSprint
+      tags: [sprints]
+      summary: Update a sprint
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSprintBody"
+      responses:
+        "200":
+          description: Updated sprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sprint"
+    delete:
+      operationId: deleteSprint
+      tags: [sprints]
+      summary: Delete a sprint
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---- COMMENTS ----
+  /tasks/{taskId}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments on a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comments list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Create a comment
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentBody"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  # ---- VENDORS ----
+  /vendors:
+    get:
+      operationId: listVendors
+      tags: [vendors]
+      summary: List all vendors
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendors list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vendor"
+    post:
+      operationId: createVendor
+      tags: [vendors]
+      summary: Create a vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVendorBody"
+      responses:
+        "201":
+          description: Created vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /vendors/{id}:
+    get:
+      operationId: getVendor
+      tags: [vendors]
+      summary: Get a vendor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+    put:
+      operationId: updateVendor
+      tags: [vendors]
+      summary: Update a vendor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVendorBody"
+      responses:
+        "200":
+          description: Updated vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+    delete:
+      operationId: deleteVendor
+      tags: [vendors]
+      summary: Delete a vendor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---- VENDOR PROJECTS ----
+  /vendor-projects:
+    get:
+      operationId: listVendorProjects
+      tags: [vendors]
+      summary: List all vendor project submissions
+      parameters:
+        - name: vendorId
+          in: query
+          schema:
+            type: integer
+        - name: stage
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendor projects list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorProject"
+    post:
+      operationId: createVendorProject
+      tags: [vendors]
+      summary: Submit a vendor project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVendorProjectBody"
+      responses:
+        "201":
+          description: Created vendor project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorProject"
+
+  /vendor-projects/{id}:
+    get:
+      operationId: getVendorProject
+      tags: [vendors]
+      summary: Get a vendor project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vendor project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorProject"
+    put:
+      operationId: updateVendorProject
+      tags: [vendors]
+      summary: Update vendor project stage/status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVendorProjectBody"
+      responses:
+        "200":
+          description: Updated vendor project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorProject"
+
+  # ---- DASHBOARD / STATS ----
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [projects]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  # ---- AI ----
+  /ai/analyze-project:
+    post:
+      operationId: analyzeProject
+      tags: [ai]
+      summary: Analyze a project with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeProjectBody"
+      responses:
+        "200":
+          description: AI analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAnalysisResult"
+
+  /ai/business-advice:
+    post:
+      operationId: getBusinessAdvice
+      tags: [ai]
+      summary: Get AI business advice for a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BusinessAdviceBody"
+      responses:
+        "200":
+          description: Business advice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAnalysisResult"
+
+  /ai/version-advice:
+    post:
+      operationId: getVersionAdvice
+      tags: [ai]
+      summary: Get AI advice on when to release a new version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionAdviceBody"
+      responses:
+        "200":
+          description: Version advice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiAnalysisResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +723,784 @@ components:
       required:
         - status
 
+    # USERS
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, developer, viewer]
+        department:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - role
+        - department
+        - createdAt
+
+    CreateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, developer, viewer]
+        department:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+      required:
+        - name
+        - email
+        - role
+        - department
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, developer, viewer]
+        department:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+
+    # PROJECTS
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [internal, vendor]
+        status:
+          type: string
+          enum: [planning, in_progress, on_hold, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        country:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        budget:
+          type: number
+          nullable: true
+        completionRate:
+          type: number
+        ownerId:
+          type: integer
+          nullable: true
+        vendorId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - type
+        - status
+        - priority
+        - completionRate
+        - createdAt
+        - updatedAt
+
+    CreateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [internal, vendor]
+        status:
+          type: string
+          enum: [planning, in_progress, on_hold, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        country:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        budget:
+          type: number
+          nullable: true
+        ownerId:
+          type: integer
+          nullable: true
+        vendorId:
+          type: integer
+          nullable: true
+      required:
+        - name
+        - type
+        - status
+        - priority
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [internal, vendor]
+        status:
+          type: string
+          enum: [planning, in_progress, on_hold, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        country:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        budget:
+          type: number
+          nullable: true
+        completionRate:
+          type: number
+        ownerId:
+          type: integer
+          nullable: true
+        vendorId:
+          type: integer
+          nullable: true
+
+    # TASKS
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        sprintId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, in_review, done]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        type:
+          type: string
+          enum: [story, task, bug, epic, subtask]
+        assigneeId:
+          type: integer
+          nullable: true
+        reporterId:
+          type: integer
+          nullable: true
+        storyPoints:
+          type: integer
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        position:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - title
+        - status
+        - priority
+        - type
+        - position
+        - createdAt
+        - updatedAt
+
+    CreateTaskBody:
+      type: object
+      properties:
+        sprintId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, in_review, done]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        type:
+          type: string
+          enum: [story, task, bug, epic, subtask]
+        assigneeId:
+          type: integer
+          nullable: true
+        reporterId:
+          type: integer
+          nullable: true
+        storyPoints:
+          type: integer
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        label:
+          type: string
+          nullable: true
+      required:
+        - title
+        - status
+        - priority
+        - type
+
+    UpdateTaskBody:
+      type: object
+      properties:
+        sprintId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [backlog, todo, in_progress, in_review, done]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        type:
+          type: string
+          enum: [story, task, bug, epic, subtask]
+        assigneeId:
+          type: integer
+          nullable: true
+        reporterId:
+          type: integer
+          nullable: true
+        storyPoints:
+          type: integer
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        label:
+          type: string
+          nullable: true
+        position:
+          type: integer
+
+    # SPRINTS
+    Sprint:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        name:
+          type: string
+        goal:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [planned, active, completed]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - name
+        - status
+        - createdAt
+
+    CreateSprintBody:
+      type: object
+      properties:
+        name:
+          type: string
+        goal:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [planned, active, completed]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+      required:
+        - name
+        - status
+
+    UpdateSprintBody:
+      type: object
+      properties:
+        name:
+          type: string
+        goal:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [planned, active, completed]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endDate:
+          type: string
+          format: date
+          nullable: true
+
+    # COMMENTS
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        taskId:
+          type: integer
+        authorId:
+          type: integer
+          nullable: true
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - taskId
+        - content
+        - createdAt
+        - updatedAt
+
+    CreateCommentBody:
+      type: object
+      properties:
+        authorId:
+          type: integer
+          nullable: true
+        content:
+          type: string
+      required:
+        - content
+
+    # VENDORS
+    Vendor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        contactName:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        contactPhone:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, pending, blacklisted]
+        specialization:
+          type: string
+          nullable: true
+        registrationNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+
+    CreateVendorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        contactName:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        contactPhone:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, pending, blacklisted]
+        specialization:
+          type: string
+          nullable: true
+        registrationNumber:
+          type: string
+          nullable: true
+      required:
+        - name
+        - status
+
+    UpdateVendorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        contactName:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        contactPhone:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive, pending, blacklisted]
+        specialization:
+          type: string
+          nullable: true
+        registrationNumber:
+          type: string
+          nullable: true
+
+    # VENDOR PROJECTS
+    VendorProject:
+      type: object
+      properties:
+        id:
+          type: integer
+        vendorId:
+          type: integer
+        projectId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        stage:
+          type: string
+          enum: [submitted, under_review, negotiation, approved, rejected, handover_in_progress, handover_complete]
+        estimatedValue:
+          type: number
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        handoverDate:
+          type: string
+          format: date
+          nullable: true
+        reviewNotes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - vendorId
+        - title
+        - stage
+        - submittedAt
+        - createdAt
+        - updatedAt
+
+    CreateVendorProjectBody:
+      type: object
+      properties:
+        vendorId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        estimatedValue:
+          type: number
+          nullable: true
+        handoverDate:
+          type: string
+          format: date
+          nullable: true
+      required:
+        - vendorId
+        - title
+
+    UpdateVendorProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        stage:
+          type: string
+          enum: [submitted, under_review, negotiation, approved, rejected, handover_in_progress, handover_complete]
+        estimatedValue:
+          type: number
+          nullable: true
+        handoverDate:
+          type: string
+          format: date
+          nullable: true
+        reviewNotes:
+          type: string
+          nullable: true
+        projectId:
+          type: integer
+          nullable: true
+
+    # DASHBOARD
+    DashboardStats:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        activeProjects:
+          type: integer
+        completedProjects:
+          type: integer
+        totalTasks:
+          type: integer
+        completedTasks:
+          type: integer
+        pendingVendorProjects:
+          type: integer
+        activeVendors:
+          type: integer
+        avgCompletionRate:
+          type: number
+        projectsByStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              count:
+                type: integer
+            required: [status, count]
+        tasksByStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              count:
+                type: integer
+            required: [status, count]
+      required:
+        - totalProjects
+        - activeProjects
+        - completedProjects
+        - totalTasks
+        - completedTasks
+        - pendingVendorProjects
+        - activeVendors
+        - avgCompletionRate
+        - projectsByStatus
+        - tasksByStatus
+
+    # AI
+    AnalyzeProjectBody:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        includeFinancial:
+          type: boolean
+      required:
+        - projectId
+
+    BusinessAdviceBody:
+      type: object
+      properties:
+        projectId:
+          type: integer
+        country:
+          type: string
+        question:
+          type: string
+          nullable: true
+      required:
+        - projectId
+        - country
+
+    VersionAdviceBody:
+      type: object
+      properties:
+        projectId:
+          type: integer
+      required:
+        - projectId
+
+    AiAnalysisResult:
+      type: object
+      properties:
+        summary:
+          type: string
+        completionRateAnalysis:
+          type: string
+          nullable: true
+        profitabilityScore:
+          type: number
+          nullable: true
+        recommendation:
+          type: string
+          enum: [continue, pause, stop, expand, review]
+          nullable: true
+        insights:
+          type: array
+          items:
+            type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+        risks:
+          type: array
+          items:
+            type: string
+        versionAdvice:
+          type: string
+          nullable: true
+        countryAnalysis:
+          type: string
+          nullable: true
+      required:
+        - summary
+        - insights
+        - suggestions
+        - risks

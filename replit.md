@@ -1,8 +1,8 @@
-# Workspace
+# FirstRegistrars BuildWise
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+**BuildWise** is a full-stack enterprise project management system for First Registrars and Investor Services. It combines Jira-like project tracking, vendor management pipelines, and AI-powered business intelligence in one platform.
 
 ## Stack
 
@@ -10,87 +10,88 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **Frontend**: React + Vite (artifacts/buildwise) — serves at `/`
+- **API framework**: Express 5 (artifacts/api-server) — serves at `/api`
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **AI**: OpenAI via Replit AI Integrations (gpt-5.2) — business analysis, profitability predictions, V2 advice
+- **Charts**: Recharts
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
+├── artifacts/
+│   ├── api-server/         # Express API server
+│   └── buildwise/          # React+Vite frontend (root path /)
+├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   ├── integrations-openai-ai-server/  # OpenAI server SDK wrapper
+│   └── integrations-openai-ai-react/   # OpenAI React hooks
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── package.json
 ```
 
-## TypeScript & Composite Projects
+## Features
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Project Management (Jira-like)
+- **All Projects**: Grid view of internal and vendor projects with status, priority, country, budget, completion rate
+- **Board View**: Kanban board with columns: Backlog → To Do → In Progress → In Review → Done
+- **Backlog**: Task prioritization and sprint assignment
+- **Sprints**: Sprint planning and management
+- **Task Detail**: Comments, assignee, story points, due dates, labels
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Vendor Management
+- **Vendor Directory**: All registered vendors with status (active/pending/blacklisted), specialization, country, contact info
+- **Vendor Pipeline**: Kanban pipeline tracking vendor project stages:
+  - Submitted → Under Review → Negotiation → Approved → Rejected → Handover In Progress → Handover Complete
 
-## Root Scripts
+### Team Management
+- User directory with roles: admin, manager, developer, viewer
+- Department tracking
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### AI Advisor (OpenAI gpt-5.2)
+Three types of AI analysis:
+1. **Project Analysis**: Completion rate analysis, profitability score (0-100), recommendation (continue/pause/stop/expand/review), insights, risks
+2. **Business Advice**: Country-specific viability analysis, regulatory environment, market conditions, ROI potential
+3. **Version Advice**: When to release V2, what features to include, improvement roadmap
 
-## Packages
+## Database Schema
 
-### `artifacts/api-server` (`@workspace/api-server`)
+- `users` — team members with roles and departments
+- `vendors` — external vendors with status and contact info
+- `projects` — internal and vendor projects with budget, dates, completion rate
+- `sprints` — sprint planning within projects
+- `tasks` — Jira-like tasks with status, priority, type, assignee
+- `comments` — task comments
+- `vendor_projects` — vendor project submissions and their pipeline stage
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+## API Endpoints
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+All under `/api`:
+- CRUD: `/users`, `/projects`, `/tasks`, `/sprints`, `/vendors`, `/vendor-projects`
+- Dashboard: `GET /dashboard/stats`
+- AI: `POST /ai/analyze-project`, `POST /ai/business-advice`, `POST /ai/version-advice`
 
-### `lib/db` (`@workspace/db`)
+## Running Codegen
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+After OpenAPI spec changes:
+```bash
+pnpm --filter @workspace/api-spec run codegen
+```
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+## Database Migrations
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Development:
+```bash
+pnpm --filter @workspace/db run push
+```
