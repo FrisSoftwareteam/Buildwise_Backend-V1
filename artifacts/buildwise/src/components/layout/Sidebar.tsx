@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -10,7 +11,8 @@ import {
   GitMerge, 
   Users, 
   BrainCircuit, 
-  Settings 
+  Settings,
+  LogOut,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -27,7 +29,13 @@ const NAV_ITEMS = [
 ];
 
 export function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   const sections = Array.from(new Set(NAV_ITEMS.map(i => i.section)));
 
@@ -73,16 +81,23 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="mt-auto p-4 border-t border-white/5">
+      <div className="mt-auto p-4 border-t border-white/5 space-y-2">
         <div className="flex items-center gap-3 rounded-lg bg-white/5 p-3">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-            FR
+          <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-purple-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            {user?.name?.split(" ").map(n => n[0]).slice(0, 2).join("") || "FR"}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-white">First Registrars</span>
-            <span className="text-xs text-slate-400">Admin Account</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-medium text-white truncate">{user?.name || "User"}</span>
+            <span className="text-xs text-slate-400 capitalize">{user?.role || "member"}</span>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all text-sm"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </div>
     </aside>
   );

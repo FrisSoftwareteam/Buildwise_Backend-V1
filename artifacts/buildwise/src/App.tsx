@@ -1,9 +1,10 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout/Layout";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 // Pages
 import Dashboard from "@/pages/Dashboard";
@@ -13,6 +14,8 @@ import Vendors from "@/pages/Vendors";
 import VendorPipeline from "@/pages/VendorPipeline";
 import BoardView from "@/pages/BoardView";
 import AIAdvisor from "@/pages/AIAdvisor";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,39 +35,78 @@ function PlaceholderPage({ title }: { title: string }) {
   );
 }
 
-function Router() {
+function ProtectedRouter() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="bg-white rounded-xl px-5 py-3">
+            <img
+              src={`${import.meta.env.BASE_URL}images/firstregistrars-logo.png`}
+              alt="First Registrars"
+              className="h-9 w-auto object-contain"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Loading BuildWise...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/projects" component={Projects} />
-        <Route path="/projects/:id" component={ProjectDetail} />
-        <Route path="/board" component={BoardView} />
-        <Route path="/backlog" component={() => <PlaceholderPage title="Backlog" />} />
-        <Route path="/sprints" component={() => <PlaceholderPage title="Sprint Management" />} />
-        <Route path="/vendors" component={Vendors} />
-        <Route path="/vendor-pipeline" component={VendorPipeline} />
-        <Route path="/team" component={() => <PlaceholderPage title="Team Directory" />} />
-        <Route path="/ai-advisor" component={AIAdvisor} />
-        <Route path="/settings" component={() => <PlaceholderPage title="Platform Settings" />} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      {/* Auth routes — always accessible */}
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
+
+      {/* Protected routes */}
+      <Route>
+        {!user ? (
+          <Redirect to="/login" />
+        ) : (
+          <Layout>
+            <Switch>
+              <Route path="/" component={Dashboard} />
+              <Route path="/projects" component={Projects} />
+              <Route path="/projects/:id" component={ProjectDetail} />
+              <Route path="/board" component={BoardView} />
+              <Route path="/backlog" component={() => <PlaceholderPage title="Backlog" />} />
+              <Route path="/sprints" component={() => <PlaceholderPage title="Sprint Management" />} />
+              <Route path="/vendors" component={Vendors} />
+              <Route path="/vendor-pipeline" component={VendorPipeline} />
+              <Route path="/team" component={() => <PlaceholderPage title="Team Directory" />} />
+              <Route path="/ai-advisor" component={AIAdvisor} />
+              <Route path="/settings" component={() => <PlaceholderPage title="Platform Settings" />} />
+              <Route component={NotFound} />
+            </Switch>
+          </Layout>
+        )}
+      </Route>
+    </Switch>
   );
 }
 
 function App() {
-  // Hardcode dark mode class on html/body for full coverage
-  document.documentElement.classList.add('dark');
-  
+  document.documentElement.classList.add("dark");
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <ProtectedRouter />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

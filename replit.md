@@ -4,6 +4,16 @@
 
 **BuildWise** is a full-stack enterprise project management system for First Registrars and Investor Services. It combines Jira-like project tracking, vendor management pipelines, and AI-powered business intelligence in one platform.
 
+## Authentication
+
+- Login page at `/login` with First Registrars branding (split-panel layout)
+- Signup page at `/signup` with department/role selection
+- Auth state stored in `localStorage` under key `buildwise_user` (no backend sessions)
+- All protected routes redirect to `/login` if unauthenticated via `useAuth()` context
+- API endpoints: `POST /api/auth/login`, `POST /api/auth/signup`, `POST /api/auth/logout`
+- Passwords stored as plain text in `users.password` column (demo/prototype — not hashed)
+- Demo credentials: any seeded user email (e.g. `c.obi@firstregistrars.com`) + `password123`
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
