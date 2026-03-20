@@ -141,20 +141,22 @@ export default function Signup() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center bg-[#0a1628] px-6 py-12 overflow-y-auto">
         <div className="w-full max-w-md space-y-7">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex justify-center">
-            <div className="bg-white rounded-xl px-5 py-3">
+          {/* Branded header */}
+          <div className="flex items-center gap-4 pb-6 border-b border-white/10">
+            <div className="bg-white rounded-xl px-4 py-2 shrink-0">
               <img
                 src={`${import.meta.env.BASE_URL}images/firstregistrars-logo.png`}
                 alt="First Registrars"
-                className="h-9 w-auto object-contain"
+                className="h-8 w-auto object-contain"
               />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#c4a747]">First Registrars</p>
+              <p className="text-lg font-bold text-white leading-tight">BuildWise</p>
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#c4a747] mb-1">First Registrars</p>
-            <p className="text-2xl font-bold text-white mb-4">BuildWise</p>
             <h2 className="text-3xl font-bold text-white">Create your account</h2>
             <p className="mt-2 text-slate-400">Get started with BuildWise today</p>
           </div>
