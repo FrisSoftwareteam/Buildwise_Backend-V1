@@ -94,6 +94,8 @@ export default function Login() {
           </div>
 
           <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#c4a747] mb-1">First Registrars</p>
+            <p className="text-2xl font-bold text-white mb-4">BuildWise</p>
             <h2 className="text-3xl font-bold text-white">Welcome back</h2>
             <p className="mt-2 text-slate-400">Sign in to your BuildWise account</p>
           </div>
