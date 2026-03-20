@@ -131,11 +131,6 @@ export default function Signup() {
           </div>
         </div>
 
-        <div className="relative z-10">
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} First Registrars & Investor Services
-          </p>
-        </div>
       </div>
 
       {/* Right panel */}
@@ -315,11 +310,6 @@ export default function Signup() {
             </a>
           </div>
 
-          <div className="border-t border-white/5 pt-5">
-            <p className="text-center text-xs text-slate-600">
-              Access restricted to authorised First Registrars personnel only
-            </p>
-          </div>
         </div>
       </div>
     </div>

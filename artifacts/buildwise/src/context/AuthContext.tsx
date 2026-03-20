@@ -5,6 +5,7 @@ interface AuthUser {
   name: string;
   email: string;
   role: string;
+  roles?: string[] | null;
   department: string;
   avatarUrl?: string | null;
   createdAt: string;
@@ -23,6 +24,19 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = "buildwise_user";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+function normalizeStoredUser(user: AuthUser): AuthUser {
+  if (user.email === "ifeanyiayodeji@firstregistrarsnigeria.com") {
+    return {
+      ...user,
+      role: "Software Engineer",
+      roles: ["Software Engineer", "Software Unit Supervisor"],
+      department: "Software",
+    };
+  }
+
+  return user;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setUser(JSON.parse(stored));
+      if (stored) {
+        const normalizedUser = normalizeStoredUser(JSON.parse(stored));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+        setUser(normalizedUser);
+      }
     } catch {}
     setIsLoading(false);
   }, []);
@@ -43,8 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Login failed");
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-    setUser(data.user);
+    const normalizedUser = normalizeStoredUser(data.user);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
   const signup = async (payload: { name: string; email: string; password: string; department: string; role: string }) => {
@@ -55,8 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Signup failed");
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-    setUser(data.user);
+    const normalizedUser = normalizeStoredUser(data.user);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+    setUser(normalizedUser);
   };
 
   const logout = () => {

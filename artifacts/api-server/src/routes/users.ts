@@ -1,36 +1,42 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  createUser,
+  deleteUser,
+  getUserById,
+  listUsers,
+  sanitizeUser,
+  updateUser,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
 router.get("/users", async (_req, res) => {
   try {
-    const users = await db.select().from(usersTable).orderBy(usersTable.name);
-    res.json(users);
+    const users = await listUsers();
+    return res.json(users.map((user) => sanitizeUser(user)));
   } catch (e) {
-    res.status(500).json({ error: "Failed to fetch users" });
+    return res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
 router.post("/users", async (req, res) => {
   try {
     const { name, email, role, department, avatarUrl } = req.body;
-    const [user] = await db.insert(usersTable).values({ name, email, role, department, avatarUrl }).returning();
-    res.status(201).json(user);
+    const user = await createUser({ name, email, role, department, avatarUrl });
+    return res.status(201).json(sanitizeUser(user));
   } catch (e) {
-    res.status(500).json({ error: "Failed to create user" });
+    return res.status(500).json({ error: "Failed to create user" });
   }
 });
 
 router.get("/users/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+    const user = await getUserById(id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+    return res.json(sanitizeUser(user));
   } catch (e) {
-    res.status(500).json({ error: "Failed to fetch user" });
+    return res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
@@ -38,21 +44,27 @@ router.put("/users/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { name, email, role, department, avatarUrl } = req.body;
-    const [user] = await db.update(usersTable).set({ name, email, role, department, avatarUrl }).where(eq(usersTable.id, id)).returning();
+    const user = await updateUser(id, {
+      name,
+      email,
+      role,
+      department,
+      avatarUrl,
+    });
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+    return res.json(sanitizeUser(user));
   } catch (e) {
-    res.status(500).json({ error: "Failed to update user" });
+    return res.status(500).json({ error: "Failed to update user" });
   }
 });
 
 router.delete("/users/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(usersTable).where(eq(usersTable.id, id));
-    res.status(204).send();
+    await deleteUser(id);
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: "Failed to delete user" });
+    return res.status(500).json({ error: "Failed to delete user" });
   }
 });
 

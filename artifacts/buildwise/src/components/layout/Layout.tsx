@@ -8,6 +8,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
 
+  const userRoleLabel = user?.roles?.length
+    ? user.roles.join(" • ")
+    : user?.role || "member";
+
   const handleLogout = () => {
     logout();
     setLocation("/login");
@@ -41,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-white leading-tight">{user?.name || "User"}</p>
-                <p className="text-xs text-slate-400 capitalize">{user?.role || "member"}</p>
+                <p className="text-xs text-slate-400">{userRoleLabel}</p>
               </div>
               <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-[#1b3a6b] to-[#2a5298] border border-[#c4a747]/40 flex items-center justify-center text-white font-bold text-sm shrink-0">
                 {initials}
@@ -71,6 +75,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </motion.div>
           </AnimatePresence>
         </main>
+
       </div>
     </div>
   );

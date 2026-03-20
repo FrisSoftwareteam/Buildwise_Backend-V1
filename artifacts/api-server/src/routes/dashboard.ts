@@ -1,15 +1,19 @@
 import { Router, type IRouter } from "express";
-import { db, projectsTable, tasksTable, vendorsTable, vendorProjectsTable } from "@workspace/db";
-import { sql, eq, count } from "drizzle-orm";
+import {
+  listAllTasks,
+  listAllVendorProjects,
+  listAllVendors,
+  listProjects,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
 router.get("/dashboard/stats", async (_req, res) => {
   try {
-    const projects = await db.select().from(projectsTable);
-    const tasks = await db.select().from(tasksTable);
-    const vendors = await db.select().from(vendorsTable);
-    const vendorProjects = await db.select().from(vendorProjectsTable);
+    const projects = await listProjects();
+    const tasks = await listAllTasks();
+    const vendors = await listAllVendors();
+    const vendorProjects = await listAllVendorProjects();
 
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === "in_progress").length;

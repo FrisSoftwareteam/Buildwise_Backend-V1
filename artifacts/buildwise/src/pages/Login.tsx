@@ -59,9 +59,9 @@ export default function Login() {
 
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Active Projects", value: "24+" },
-              { label: "Vendors Managed", value: "30+" },
-              { label: "Tasks Tracked", value: "1,200+" },
+              { label: "Active Projects", value: "16+" },
+              { label: "Vendors Managed", value: "3+" },
+              { label: "Tasks Tracked", value: "120+" },
               { label: "AI Insights", value: "Daily" },
             ].map(stat => (
               <div key={stat.label} className="bg-white/5 rounded-xl p-4 border border-white/10">
@@ -72,11 +72,6 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="relative z-10">
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} First Registrars & Investor Services. All rights reserved.
-          </p>
-        </div>
       </div>
 
       {/* Right panel - form */}
@@ -164,22 +159,6 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="text-center">
-            <span className="text-slate-500 text-sm">Don't have an account? </span>
-            <a
-              href={`${import.meta.env.BASE_URL}signup`.replace(/\/\//g, "/")}
-              onClick={e => { e.preventDefault(); setLocation("/signup"); }}
-              className="text-[#c4a747] hover:text-[#c4a747]/80 text-sm font-medium transition-colors"
-            >
-              Create account
-            </a>
-          </div>
-
-          <div className="border-t border-white/5 pt-6">
-            <p className="text-center text-xs text-slate-600">
-              Access restricted to authorised First Registrars personnel only
-            </p>
-          </div>
         </div>
       </div>
     </div>

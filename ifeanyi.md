@@ -11,7 +11,7 @@
 - Auth state stored in `localStorage` under key `buildwise_user` (no backend sessions)
 - All protected routes redirect to `/login` if unauthenticated via `useAuth()` context
 - API endpoints: `POST /api/auth/login`, `POST /api/auth/signup`, `POST /api/auth/logout`
-- Passwords stored as plain text in `users.password` column (demo/prototype — not hashed)
+- Passwords stored in MongoDB using a salted `scrypt` hash
 - Demo credentials: any seeded user email (e.g. `c.obi@firstregistrars.com`) + `password123`
 
 ## Stack
@@ -22,7 +22,7 @@
 - **TypeScript version**: 5.9
 - **Frontend**: React + Vite (artifacts/buildwise) — serves at `/`
 - **API framework**: Express 5 (artifacts/api-server) — serves at `/api`
-- **Database**: PostgreSQL + Drizzle ORM
+- **Database**: MongoDB
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **AI**: OpenAI via Replit AI Integrations (gpt-5.2) — business analysis, profitability predictions, V2 advice
@@ -41,7 +41,7 @@ artifacts-monorepo/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   ├── db/                 # Drizzle ORM schema + DB connection
+│   ├── db/                 # MongoDB connection + shared data access helpers
 │   ├── integrations-openai-ai-server/  # OpenAI server SDK wrapper
 │   └── integrations-openai-ai-react/   # OpenAI React hooks
 ├── scripts/                # Utility scripts
@@ -101,7 +101,8 @@ pnpm --filter @workspace/api-spec run codegen
 
 ## Database Migrations
 
-Development:
+MongoDB connection settings:
 ```bash
-pnpm --filter @workspace/db run push
+MONGODB_URI=mongodb://127.0.0.1:27017/buildwise
+MONGODB_DB=buildwise
 ```

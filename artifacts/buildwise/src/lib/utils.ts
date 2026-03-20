@@ -6,10 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number | null | undefined): string {
-  if (amount == null) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
+  if (amount == null) return "NGN 0.00";
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
-    currency: "USD",
+    currency: "NGN",
   }).format(amount);
 }
 

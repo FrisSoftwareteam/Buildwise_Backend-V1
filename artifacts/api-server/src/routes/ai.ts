@@ -1,15 +1,18 @@
 import { Router, type IRouter } from "express";
-import { db, projectsTable, tasksTable, sprintsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  getProjectById,
+  listSprintsByProject,
+  listTasksByProject,
+} from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
 async function getProjectContext(projectId: number) {
-  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  const project = await getProjectById(projectId);
   if (!project) throw new Error("Project not found");
-  const tasks = await db.select().from(tasksTable).where(eq(tasksTable.projectId, projectId));
-  const sprints = await db.select().from(sprintsTable).where(eq(sprintsTable.projectId, projectId));
+  const tasks = await listTasksByProject(projectId);
+  const sprints = await listSprintsByProject(projectId);
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter(t => t.status === "done").length;

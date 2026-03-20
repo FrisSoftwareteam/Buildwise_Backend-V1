@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { db, tasksTable, sprintsTable, commentsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import {
+  createComment,
+  deleteSprint,
+  deleteTask,
+  getTaskById,
+  listCommentsByTask,
+  updateSprint,
+  updateTask,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -8,7 +15,7 @@ const router: IRouter = Router();
 router.get("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const [task] = await db.select().from(tasksTable).where(eq(tasksTable.id, id));
+    const task = await getTaskById(id);
     if (!task) return res.status(404).json({ error: "Task not found" });
     res.json(task);
   } catch (e) {
@@ -20,12 +27,11 @@ router.put("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { sprintId, title, description, status, priority, type, assigneeId, reporterId, storyPoints, dueDate, label, position } = req.body;
-    const [task] = await db.update(tasksTable).set({
+    const task = await updateTask(id, {
       sprintId, title, description, status, priority, type,
       assigneeId, reporterId, storyPoints, dueDate, label,
       position: position !== undefined ? position : undefined,
-      updatedAt: new Date()
-    }).where(eq(tasksTable.id, id)).returning();
+    });
     if (!task) return res.status(404).json({ error: "Task not found" });
     res.json(task);
   } catch (e) {
@@ -36,7 +42,7 @@ router.put("/tasks/:id", async (req, res) => {
 router.delete("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(tasksTable).where(eq(tasksTable.id, id));
+    await deleteTask(id);
     res.status(204).send();
   } catch (e) {
     res.status(500).json({ error: "Failed to delete task" });
@@ -48,7 +54,7 @@ router.put("/sprints/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { name, goal, status, startDate, endDate } = req.body;
-    const [sprint] = await db.update(sprintsTable).set({ name, goal, status, startDate, endDate }).where(eq(sprintsTable.id, id)).returning();
+    const sprint = await updateSprint(id, { name, goal, status, startDate, endDate });
     if (!sprint) return res.status(404).json({ error: "Sprint not found" });
     res.json(sprint);
   } catch (e) {
@@ -59,7 +65,7 @@ router.put("/sprints/:id", async (req, res) => {
 router.delete("/sprints/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(sprintsTable).where(eq(sprintsTable.id, id));
+    await deleteSprint(id);
     res.status(204).send();
   } catch (e) {
     res.status(500).json({ error: "Failed to delete sprint" });
@@ -70,7 +76,7 @@ router.delete("/sprints/:id", async (req, res) => {
 router.get("/tasks/:taskId/comments", async (req, res) => {
   try {
     const taskId = parseInt(req.params.taskId);
-    const comments = await db.select().from(commentsTable).where(eq(commentsTable.taskId, taskId)).orderBy(commentsTable.createdAt);
+    const comments = await listCommentsByTask(taskId);
     res.json(comments);
   } catch (e) {
     res.status(500).json({ error: "Failed to fetch comments" });
@@ -81,7 +87,7 @@ router.post("/tasks/:taskId/comments", async (req, res) => {
   try {
     const taskId = parseInt(req.params.taskId);
     const { authorId, content } = req.body;
-    const [comment] = await db.insert(commentsTable).values({ taskId, authorId, content }).returning();
+    const comment = await createComment({ taskId, authorId, content });
     res.status(201).json(comment);
   } catch (e) {
     res.status(500).json({ error: "Failed to create comment" });
