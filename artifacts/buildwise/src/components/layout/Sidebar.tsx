@@ -41,9 +41,13 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 w-64 glass-panel border-r border-y-0 border-l-0 flex flex-col transition-transform duration-300">
-      <div className="flex h-16 shrink-0 items-center px-4 border-b border-white/5">
-        <div className="bg-white rounded-lg px-3 py-1.5">
+      <div className="shrink-0 px-4 pt-5 pb-4 border-b border-white/5 space-y-3">
+        <div className="bg-white rounded-lg px-3 py-1.5 inline-block">
           <img src={`${import.meta.env.BASE_URL}images/firstregistrars-logo.png`} alt="First Registrars" className="h-8 w-auto object-contain" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#c4a747]">First Registrars</p>
+          <p className="text-sm font-bold text-white leading-tight">BuildWise</p>
         </div>
       </div>
 
