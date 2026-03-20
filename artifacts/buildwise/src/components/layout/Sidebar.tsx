@@ -33,9 +33,10 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 w-64 glass-panel border-r border-y-0 border-l-0 flex flex-col transition-transform duration-300">
-      <div className="flex h-16 shrink-0 items-center gap-3 px-6 border-b border-white/5">
-        <img src={`${import.meta.env.BASE_URL}images/logo-mark.png`} alt="BuildWise" className="h-8 w-8" />
-        <span className="text-xl font-bold font-display text-white tracking-tight">Build<span className="text-primary">Wise</span></span>
+      <div className="flex h-16 shrink-0 items-center px-4 border-b border-white/5">
+        <div className="bg-white rounded-lg px-3 py-1.5">
+          <img src={`${import.meta.env.BASE_URL}images/firstregistrars-logo.png`} alt="First Registrars" className="h-8 w-auto object-contain" />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6 space-y-6 scrollbar-hide">
