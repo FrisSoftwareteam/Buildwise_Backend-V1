@@ -170,17 +170,17 @@ importers:
         specifier: ~5.9.2
         version: 5.9.3
 
-  artifacts/api-server:
+  Backend/api-server:
     dependencies:
       '@workspace/api-zod':
         specifier: workspace:*
-        version: link:../../lib/api-zod
+        version: link:../lib/api-zod
       '@workspace/db':
         specifier: workspace:*
-        version: link:../../lib/db
+        version: link:../lib/db
       '@workspace/integrations-openai-ai-server':
         specifier: workspace:*
-        version: link:../../lib/integrations-openai-ai-server
+        version: link:../lib/integrations-openai-ai-server
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -222,7 +222,68 @@ importers:
         specifier: 'catalog:'
         version: 4.21.0
 
-  artifacts/buildwise:
+  Backend/lib/api-spec:
+    devDependencies:
+      orval:
+        specifier: ^8.5.2
+        version: 8.5.3(prettier@3.8.1)(typescript@5.9.3)
+
+  Backend/lib/api-zod:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+
+  Backend/lib/db:
+    dependencies:
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.1(@types/pg@8.18.0)(pg@8.20.0)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.1(@types/pg@8.18.0)(pg@8.20.0))(zod@3.25.76)
+      mongodb:
+        specifier: ^6.18.0
+        version: 6.21.0
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.3.5
+      '@types/pg':
+        specifier: ^8.18.0
+        version: 8.18.0
+      drizzle-kit:
+        specifier: ^0.31.9
+        version: 0.31.9
+
+  Backend/lib/integrations-openai-ai-server:
+    dependencies:
+      openai:
+        specifier: ^6.27.0
+        version: 6.32.0(zod@4.3.6)
+      p-limit:
+        specifier: ^7.3.0
+        version: 7.3.0
+      p-retry:
+        specifier: ^7.1.1
+        version: 7.1.1
+
+  Backend/scripts:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.3.5
+      tsx:
+        specifier: 'catalog:'
+        version: 4.21.0
+
+  Frontend/buildwise:
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -340,7 +401,7 @@ importers:
         version: 5.1.4(vite@7.3.1(@types/node@25.3.5)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
       '@workspace/api-client-react':
         specifier: workspace:*
-        version: link:../../lib/api-client-react
+        version: link:../lib/api-client-react
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
@@ -413,6 +474,14 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
+
+  Frontend/lib/api-client-react:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.90.21(react@19.1.0)
+
+  Frontend/lib/integrations-openai-ai-react: {}
 
   artifacts/mockup-sandbox:
     devDependencies:
@@ -596,75 +665,6 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 3.25.76
-
-  lib/api-client-react:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: 'catalog:'
-        version: 5.90.21(react@19.1.0)
-
-  lib/api-spec:
-    devDependencies:
-      orval:
-        specifier: ^8.5.2
-        version: 8.5.3(prettier@3.8.1)(typescript@5.9.3)
-
-  lib/api-zod:
-    dependencies:
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
-
-  lib/db:
-    dependencies:
-      drizzle-orm:
-        specifier: 'catalog:'
-        version: 0.45.1(@types/pg@8.18.0)(pg@8.20.0)
-      drizzle-zod:
-        specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.45.1(@types/pg@8.18.0)(pg@8.20.0))(zod@3.25.76)
-      mongodb:
-        specifier: ^6.18.0
-        version: 6.21.0
-      pg:
-        specifier: ^8.20.0
-        version: 8.20.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.3.5
-      '@types/pg':
-        specifier: ^8.18.0
-        version: 8.18.0
-      drizzle-kit:
-        specifier: ^0.31.9
-        version: 0.31.9
-
-  lib/integrations-openai-ai-react: {}
-
-  lib/integrations-openai-ai-server:
-    dependencies:
-      openai:
-        specifier: ^6.27.0
-        version: 6.32.0(zod@4.3.6)
-      p-limit:
-        specifier: ^7.3.0
-        version: 7.3.0
-      p-retry:
-        specifier: ^7.1.1
-        version: 7.1.1
-
-  scripts:
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 25.3.5
-      tsx:
-        specifier: 'catalog:'
-        version: 4.21.0
 
 packages:
 

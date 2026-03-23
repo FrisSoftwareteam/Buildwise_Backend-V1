@@ -20,12 +20,12 @@
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **Frontend**: React + Vite (artifacts/buildwise) — serves at `/`
-- **API framework**: Express 5 (artifacts/api-server) — serves at `/api`
+- **Frontend**: React + Vite (Frontend/buildwise) — serves at `/`
+- **API framework**: Express 5 (Backend/api-server) — serves at `/api`
 - **Database**: MongoDB
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **AI**: OpenAI via Replit AI Integrations (gpt-5.2) — business analysis, profitability predictions, V2 advice
+- **AI**: Google Gemini (`gemini-2.5-flash-lite`) — business analysis, profitability predictions, V2 advice
 - **Charts**: Recharts
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
@@ -33,18 +33,23 @@
 ## Structure
 
 ```text
-artifacts-monorepo/
+Firstregistrars-BuildWise/
+├── Frontend/
+│   ├── buildwise/                # React+Vite frontend (root path /)
+│   └── lib/
+│       ├── api-client-react/     # Generated React Query hooks
+│       └── integrations-openai-ai-react/
+├── Backend/
+│   ├── api-server/               # Express API server
+│   ├── lib/
+│   │   ├── api-spec/             # OpenAPI spec + Orval codegen config
+│   │   ├── api-zod/              # Generated Zod schemas from OpenAPI
+│   │   ├── db/                   # MongoDB connection + shared data access helpers
+│   │   ├── integrations-openai-ai-server/
+│   │   └── integrations/
+│   └── scripts/                  # Utility scripts
 ├── artifacts/
-│   ├── api-server/         # Express API server
-│   └── buildwise/          # React+Vite frontend (root path /)
-├── lib/
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   ├── db/                 # MongoDB connection + shared data access helpers
-│   ├── integrations-openai-ai-server/  # OpenAI server SDK wrapper
-│   └── integrations-openai-ai-react/   # OpenAI React hooks
-├── scripts/                # Utility scripts
+│   └── mockup-sandbox/
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
 ├── tsconfig.json
@@ -69,7 +74,7 @@ artifacts-monorepo/
 - User directory with roles: admin, manager, developer, viewer
 - Department tracking
 
-### AI Advisor (OpenAI gpt-5.2)
+### AI Advisor (Gemini 2.5 Flash-Lite)
 Three types of AI analysis:
 1. **Project Analysis**: Completion rate analysis, profitability score (0-100), recommendation (continue/pause/stop/expand/review), insights, risks
 2. **Business Advice**: Country-specific viability analysis, regulatory environment, market conditions, ROI potential

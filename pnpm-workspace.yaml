@@ -1,8 +1,11 @@
 packages:
-  - artifacts/*
-  - lib/*
-  - lib/integrations/*
-  - scripts
+  - Frontend/*
+  - Frontend/lib/*
+  - Backend/*
+  - Backend/lib/*
+  - Backend/lib/integrations/*
+  - Backend/scripts
+  - artifacts/mockup-sandbox
 
 autoInstallPeers: false
 
