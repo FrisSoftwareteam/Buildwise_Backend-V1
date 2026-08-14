@@ -137,7 +137,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [internal, vendor]
+            enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         - name: status
           in: query
           schema:
@@ -735,7 +735,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, developer, viewer]
+          enum: [admin, manager, developer, vendor, viewer]
         department:
           type: string
         avatarUrl:
@@ -761,7 +761,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, developer, viewer]
+          enum: [admin, manager, developer, vendor, viewer]
         department:
           type: string
         avatarUrl:
@@ -782,7 +782,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, developer, viewer]
+          enum: [admin, manager, developer, vendor, viewer]
         department:
           type: string
         avatarUrl:
@@ -802,7 +802,7 @@ components:
           nullable: true
         type:
           type: string
-          enum: [internal, vendor]
+          enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
           enum: [planning, in_progress, on_hold, completed, cancelled]
@@ -823,6 +823,12 @@ components:
         budget:
           type: number
           nullable: true
+        initialCost:
+          type: number
+          nullable: true
+        monthlyCost:
+          type: number
+          nullable: true
         completionRate:
           type: number
         ownerId:
@@ -831,6 +837,10 @@ components:
         vendorId:
           type: integer
           nullable: true
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectContributor"
         createdAt:
           type: string
           format: date-time
@@ -857,7 +867,7 @@ components:
           nullable: true
         type:
           type: string
-          enum: [internal, vendor]
+          enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
           enum: [planning, in_progress, on_hold, completed, cancelled]
@@ -878,12 +888,22 @@ components:
         budget:
           type: number
           nullable: true
+        initialCost:
+          type: number
+          nullable: true
+        monthlyCost:
+          type: number
+          nullable: true
         ownerId:
           type: integer
           nullable: true
         vendorId:
           type: integer
           nullable: true
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectContributor"
       required:
         - name
         - type
@@ -900,7 +920,7 @@ components:
           nullable: true
         type:
           type: string
-          enum: [internal, vendor]
+          enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
           enum: [planning, in_progress, on_hold, completed, cancelled]
@@ -921,6 +941,12 @@ components:
         budget:
           type: number
           nullable: true
+        initialCost:
+          type: number
+          nullable: true
+        monthlyCost:
+          type: number
+          nullable: true
         completionRate:
           type: number
         ownerId:
@@ -929,6 +955,27 @@ components:
         vendorId:
           type: integer
           nullable: true
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectContributor"
+
+    ProjectContributor:
+      type: object
+      properties:
+        name:
+          type: string
+        userId:
+          type: integer
+          nullable: true
+        parts:
+          type: array
+          items:
+            type: string
+            enum: [frontend, backend, database, integration, cloud_hosting]
+      required:
+        - name
+        - parts
 
     # TASKS
     Task:
@@ -965,6 +1012,10 @@ components:
           type: integer
           nullable: true
         dueDate:
+          type: string
+          format: date
+          nullable: true
+        overdueReminderSentOn:
           type: string
           format: date
           nullable: true
@@ -1022,7 +1073,6 @@ components:
         dueDate:
           type: string
           format: date
-          nullable: true
         label:
           type: string
           nullable: true
@@ -1031,6 +1081,7 @@ components:
         - status
         - priority
         - type
+        - dueDate
 
     UpdateTaskBody:
       type: object

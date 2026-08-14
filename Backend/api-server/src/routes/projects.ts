@@ -13,6 +13,25 @@ import {
 
 const router: IRouter = Router();
 
+const WORK_PARTS = new Set(["frontend", "backend", "database", "integration", "cloud_hosting"]);
+
+function moneyString(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  return String(value);
+}
+
+function sanitizeContributors(raw: unknown) {
+  if (!Array.isArray(raw)) return undefined;
+  return raw
+    .filter((item) => item && typeof item.name === "string" && item.name.trim())
+    .map((item) => ({
+      name: String(item.name).trim(),
+      userId: typeof item.userId === "number" ? item.userId : null,
+      parts: Array.isArray(item.parts) ? item.parts.filter((part: string) => WORK_PARTS.has(part)) : [],
+    }));
+}
+
 // PROJECTS
 router.get("/projects", async (req, res) => {
   try {
@@ -29,11 +48,15 @@ router.get("/projects", async (req, res) => {
 
 router.post("/projects", async (req, res) => {
   try {
-    const { name, description, type, status, priority, country, startDate, endDate, budget, ownerId, vendorId } = req.body;
+    const { name, description, type, status, priority, country, startDate, endDate, budget, initialCost, monthlyCost, ownerId, vendorId, contributors } = req.body;
+    const setupCost = moneyString(initialCost ?? budget);
     const project = await createProject({
-      name, description, type: type || "internal", status: status || "planning",
+      name, description,
+      type: type || "web", status: status || "planning",
       priority: priority || "medium", country, startDate, endDate,
-      budget: budget ? String(budget) : undefined, ownerId, vendorId, completionRate: "0"
+      budget: setupCost, initialCost: setupCost, monthlyCost: moneyString(monthlyCost),
+      ownerId, vendorId, completionRate: "0",
+      contributors: sanitizeContributors(contributors) || [],
     });
     res.status(201).json(project);
   } catch (e) {
@@ -55,12 +78,16 @@ router.get("/projects/:id", async (req, res) => {
 router.put("/projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, description, type, status, priority, country, startDate, endDate, budget, completionRate, ownerId, vendorId } = req.body;
+    const { name, description, type, status, priority, country, startDate, endDate, budget, initialCost, monthlyCost, completionRate, ownerId, vendorId, contributors } = req.body;
+    const setupCost = moneyString(initialCost ?? budget);
     const project = await updateProject(id, {
       name, description, type, status, priority, country, startDate, endDate,
-      budget: budget !== undefined ? String(budget) : undefined,
+      budget: setupCost,
+      initialCost: setupCost,
+      monthlyCost: moneyString(monthlyCost),
       completionRate: completionRate !== undefined ? String(completionRate) : undefined,
       ownerId, vendorId,
+      contributors: sanitizeContributors(contributors),
     });
     if (!project) return res.status(404).json({ error: "Project not found" });
     res.json(project);
@@ -99,6 +126,9 @@ router.post("/projects/:projectId/tasks", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
     const { sprintId, title, description, status, priority, type, assigneeId, reporterId, storyPoints, dueDate, label } = req.body;
+    if (!dueDate) {
+      return res.status(400).json({ error: "Every task needs a timeline date" });
+    }
     const existing = await listTasksByProject(projectId);
     const position = existing.length;
     const task = await createTask({

@@ -1,7 +1,15 @@
 import { Router, type IRouter } from "express";
 import { createUser, getUserByEmail, sanitizeUser, verifyUserPassword } from "@workspace/db";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
+
+router.get("/auth/providers", (_req, res) => {
+  return res.json({
+    google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    microsoft: Boolean(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET),
+  });
+});
 
 router.post("/auth/login", async (req, res) => {
   try {
@@ -19,6 +27,7 @@ router.post("/auth/login", async (req, res) => {
     }
     return res.json({ user: sanitizeUser(user) });
   } catch (e) {
+    logger.error({ err: e }, "Login failed");
     return res.status(500).json({ error: "Login failed" });
   }
 });
@@ -42,6 +51,7 @@ router.post("/auth/signup", async (req, res) => {
     });
     return res.status(201).json({ user: sanitizeUser(user) });
   } catch (e) {
+    logger.error({ err: e }, "Signup failed");
     return res.status(500).json({ error: "Signup failed" });
   }
 });

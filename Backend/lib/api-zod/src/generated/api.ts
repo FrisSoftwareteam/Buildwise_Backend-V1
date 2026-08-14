@@ -21,7 +21,7 @@ export const ListUsersResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "manager", "developer", "viewer"]),
+  role: zod.enum(["admin", "manager", "developer", "vendor", "viewer"]),
   department: zod.string(),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.date(),
@@ -34,7 +34,7 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem);
 export const CreateUserBody = zod.object({
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "manager", "developer", "viewer"]),
+  role: zod.enum(["admin", "manager", "developer", "vendor", "viewer"]),
   department: zod.string(),
   avatarUrl: zod.string().nullish(),
 });
@@ -50,7 +50,7 @@ export const GetUserResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "manager", "developer", "viewer"]),
+  role: zod.enum(["admin", "manager", "developer", "vendor", "viewer"]),
   department: zod.string(),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.date(),
@@ -66,7 +66,7 @@ export const UpdateUserParams = zod.object({
 export const UpdateUserBody = zod.object({
   name: zod.string().optional(),
   email: zod.string().optional(),
-  role: zod.enum(["admin", "manager", "developer", "viewer"]).optional(),
+  role: zod.enum(["admin", "manager", "developer", "vendor", "viewer"]).optional(),
   department: zod.string().optional(),
   avatarUrl: zod.string().nullish(),
 });
@@ -75,7 +75,7 @@ export const UpdateUserResponse = zod.object({
   id: zod.number(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["admin", "manager", "developer", "viewer"]),
+  role: zod.enum(["admin", "manager", "developer", "vendor", "viewer"]),
   department: zod.string(),
   avatarUrl: zod.string().nullish(),
   createdAt: zod.date(),

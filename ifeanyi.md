@@ -22,8 +22,8 @@
 - **TypeScript version**: 5.9
 - **Frontend**: React + Vite (Frontend/buildwise) — serves at `/`
 - **API framework**: Express 5 (Backend/api-server) — serves at `/api`
-- **Database**: MongoDB
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
+- **Database**: MongoDB only
+- **Validation**: Zod (`zod/v4`)
 - **API codegen**: Orval (from OpenAPI spec)
 - **AI**: Google Gemini (`gemini-2.5-flash-lite`) — business analysis, profitability predictions, V2 advice
 - **Charts**: Recharts

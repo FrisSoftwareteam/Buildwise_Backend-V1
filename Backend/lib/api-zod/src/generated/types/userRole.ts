@@ -12,5 +12,6 @@ export const UserRole = {
   admin: "admin",
   manager: "manager",
   developer: "developer",
+  vendor: "vendor",
   viewer: "viewer",
 } as const;
