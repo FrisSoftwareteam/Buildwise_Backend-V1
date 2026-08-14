@@ -31,8 +31,21 @@ export interface Project {
   ownerId?: number | null;
   vendorId?: number | null;
   contributors?: ProjectContributor[];
+  documents?: ProjectDocument[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export const PROJECT_DOCUMENT_KINDS = ["scope", "manual", "technical", "sign_off"] as const;
+export type ProjectDocumentKind = (typeof PROJECT_DOCUMENT_KINDS)[number];
+
+export interface ProjectDocument {
+  kind: ProjectDocumentKind;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  storageName: string;
+  uploadedAt: Date;
 }
 
 export interface ProjectContributor {
@@ -1941,6 +1954,7 @@ export async function createProject(
     createdAt: project.createdAt ?? now,
     updatedAt: project.updatedAt ?? now,
     ...project,
+    documents: project.documents ?? [],
   };
   await db.collection<Project>("projects").insertOne(doc);
   return doc;
@@ -1957,6 +1971,20 @@ export async function updateProject(
   });
   await db.collection<Project>("projects").updateOne({ id }, { $set: set });
   return getProjectById(id);
+}
+
+export async function setProjectDocument(id: number, document: ProjectDocument) {
+  const project = await getProjectById(id);
+  if (!project) return null;
+  const documents = [...(project.documents || []).filter((item) => item.kind !== document.kind), document];
+  return updateProject(id, { documents });
+}
+
+export async function removeProjectDocument(id: number, kind: ProjectDocumentKind) {
+  const project = await getProjectById(id);
+  if (!project) return null;
+  const documents = (project.documents || []).filter((item) => item.kind !== kind);
+  return updateProject(id, { documents });
 }
 
 export async function deleteProject(id: number) {

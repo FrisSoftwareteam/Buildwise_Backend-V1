@@ -89,9 +89,15 @@ router.get("/vendor-projects", async (req, res) => {
 
 router.post("/vendor-projects", async (req, res) => {
   try {
-    const { vendorId, title, description, estimatedValue, handoverDate } = req.body;
+    const { vendorId, title, description, estimatedValue, handoverDate, projectId } = req.body;
     const vp = await createVendorProject({
-      vendorId, title, description, estimatedValue, handoverDate, stage: "submitted"
+      vendorId,
+      title,
+      description,
+      estimatedValue: estimatedValue === undefined || estimatedValue === null || estimatedValue === "" ? null : String(estimatedValue),
+      handoverDate,
+      projectId: projectId ? Number(projectId) : null,
+      stage: "submitted",
     });
     res.status(201).json(vp);
   } catch (e) {
@@ -114,7 +120,19 @@ router.put("/vendor-projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { title, description, stage, estimatedValue, handoverDate, reviewNotes, projectId } = req.body;
-    const updates: Record<string, unknown> = { title, description, estimatedValue, handoverDate, reviewNotes, projectId };
+    const updates: Record<string, unknown> = {
+      title,
+      description,
+      estimatedValue:
+        estimatedValue === undefined
+          ? undefined
+          : estimatedValue === null || estimatedValue === ""
+            ? null
+            : String(estimatedValue),
+      handoverDate,
+      reviewNotes,
+      projectId,
+    };
     if (stage) {
       updates.stage = stage;
       if (stage === "under_review" || stage === "negotiation") updates.reviewedAt = new Date();
