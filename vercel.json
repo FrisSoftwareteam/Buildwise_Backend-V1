@@ -1,8 +1,14 @@
 {
-  "framework": null,
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm --filter @workspace/api-server run build",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && mkdir -p public",
+  "outputDirectory": "public",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
-  ]
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "Backend/api-server/dist/**",
+      "maxDuration": 30
+    }
+  }
 }
