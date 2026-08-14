@@ -8,8 +8,18 @@ import {
   listProjects,
   listSprintsByProject,
   listTasksByProject,
+  removeProjectDocument,
+  setProjectDocument,
   updateProject,
 } from "@workspace/db";
+import {
+  deleteAllProjectDocumentFiles,
+  deleteProjectDocumentFile,
+  isProjectDocumentKind,
+  projectDocumentPath,
+  readProjectDocumentText,
+  saveProjectDocumentFile,
+} from "../lib/project-documents";
 
 const router: IRouter = Router();
 
@@ -99,10 +109,98 @@ router.put("/projects/:id", async (req, res) => {
 router.delete("/projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    await deleteAllProjectDocumentFiles(id);
     await deleteProject(id);
     res.status(204).send();
   } catch (e) {
     res.status(500).json({ error: "Failed to delete project" });
+  }
+});
+
+router.post("/projects/:id/documents/:kind", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const kind = req.params.kind;
+    if (!isProjectDocumentKind(kind)) {
+      return res.status(400).json({ error: "Unknown document type" });
+    }
+    const project = await getProjectById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+
+    const { fileName, mimeType, content } = req.body || {};
+    if (!fileName || !content) {
+      return res.status(400).json({ error: "Choose a file to upload" });
+    }
+
+    const existing = (project.documents || []).find((item) => item.kind === kind);
+    const saved = await saveProjectDocumentFile({
+      projectId: id,
+      kind,
+      fileName: String(fileName),
+      mimeType: String(mimeType || "application/octet-stream"),
+      content: String(content),
+    });
+    if (existing?.storageName && existing.storageName !== saved.storageName) {
+      await deleteProjectDocumentFile(id, existing.storageName);
+    }
+    const updated = await setProjectDocument(id, saved);
+    res.json(updated);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to upload document";
+    res.status(400).json({ error: message });
+  }
+});
+
+router.get("/projects/:id/documents/:kind", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const kind = req.params.kind;
+    if (!isProjectDocumentKind(kind)) {
+      return res.status(400).json({ error: "Unknown document type" });
+    }
+    const project = await getProjectById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+    const document = (project.documents || []).find((item) => item.kind === kind);
+    if (!document) return res.status(404).json({ error: "Document not uploaded yet" });
+    res.download(projectDocumentPath(id, document.storageName), document.fileName);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to download document" });
+  }
+});
+
+router.get("/projects/:id/documents/:kind/text", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const kind = req.params.kind;
+    if (!isProjectDocumentKind(kind)) {
+      return res.status(400).json({ error: "Unknown document type" });
+    }
+    const project = await getProjectById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+    const document = (project.documents || []).find((item) => item.kind === kind);
+    if (!document) return res.status(404).json({ error: "Document not uploaded yet" });
+    const text = await readProjectDocumentText(id, document);
+    res.json({ kind, fileName: document.fileName, text });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to read document" });
+  }
+});
+
+router.delete("/projects/:id/documents/:kind", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const kind = req.params.kind;
+    if (!isProjectDocumentKind(kind)) {
+      return res.status(400).json({ error: "Unknown document type" });
+    }
+    const project = await getProjectById(id);
+    if (!project) return res.status(404).json({ error: "Project not found" });
+    const existing = (project.documents || []).find((item) => item.kind === kind);
+    await deleteProjectDocumentFile(id, existing?.storageName);
+    const updated = await removeProjectDocument(id, kind);
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to remove document" });
   }
 });
 
