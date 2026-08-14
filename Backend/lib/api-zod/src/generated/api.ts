@@ -105,6 +105,7 @@ export const ListProjectsResponseItem = zod.object({
     "planning",
     "in_progress",
     "on_hold",
+    "inactive",
     "completed",
     "cancelled",
   ]),
@@ -132,6 +133,7 @@ export const CreateProjectBody = zod.object({
     "planning",
     "in_progress",
     "on_hold",
+    "inactive",
     "completed",
     "cancelled",
   ]),
@@ -160,6 +162,7 @@ export const GetProjectResponse = zod.object({
     "planning",
     "in_progress",
     "on_hold",
+    "inactive",
     "completed",
     "cancelled",
   ]),
@@ -187,7 +190,7 @@ export const UpdateProjectBody = zod.object({
   description: zod.string().nullish(),
   type: zod.enum(["internal", "vendor"]).optional(),
   status: zod
-    .enum(["planning", "in_progress", "on_hold", "completed", "cancelled"])
+    .enum(["planning", "in_progress", "on_hold", "inactive", "completed", "cancelled"])
     .optional(),
   priority: zod.enum(["low", "medium", "high", "critical"]).optional(),
   country: zod.string().nullish(),
@@ -208,6 +211,7 @@ export const UpdateProjectResponse = zod.object({
     "planning",
     "in_progress",
     "on_hold",
+    "inactive",
     "completed",
     "cancelled",
   ]),

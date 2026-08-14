@@ -12,6 +12,7 @@ export const ProjectStatus = {
   planning: "planning",
   in_progress: "in_progress",
   on_hold: "on_hold",
+  inactive: "inactive",
   completed: "completed",
   cancelled: "cancelled",
 } as const;

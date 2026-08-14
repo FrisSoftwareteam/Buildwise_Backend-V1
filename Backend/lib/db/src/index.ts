@@ -361,6 +361,7 @@ async function ensureSeedData(db: Db) {
     await ensureSoftwareProductCosts(db);
     await ensureTaskTimelines(db);
     await ensureVendorUser(db);
+    await ensureProjectManagerUser(db);
     return;
   }
 
@@ -788,6 +789,7 @@ async function ensureSeedData(db: Db) {
   await ensureSoftwareProductCosts(db);
   await ensureTaskTimelines(db);
   await ensureVendorUser(db);
+  await ensureProjectManagerUser(db);
 }
 
 async function ensureVendorUser(db: Db) {
@@ -807,6 +809,28 @@ async function ensureVendorUser(db: Db) {
     password: await hashPassword("password123"),
     role: "vendor",
     department: "Crest Advisory",
+    avatarUrl: null,
+    createdAt: now,
+  });
+}
+
+async function ensureProjectManagerUser(db: Db) {
+  const usersCollection = db.collection<User>("users");
+  const email = "projectmanager@gmail.com";
+  const existing = await usersCollection.findOne({ email });
+  if (existing) {
+    return;
+  }
+
+  const now = new Date();
+  const id = await nextSequence("users", db);
+  await usersCollection.insertOne({
+    id,
+    name: "Project Manager",
+    email,
+    password: await hashPassword("Admin@123"),
+    role: "manager",
+    department: "Project Management Office",
     avatarUrl: null,
     createdAt: now,
   });

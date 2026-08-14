@@ -805,7 +805,7 @@ components:
           enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
-          enum: [planning, in_progress, on_hold, completed, cancelled]
+          enum: [planning, in_progress, on_hold, inactive, completed, cancelled]
         priority:
           type: string
           enum: [low, medium, high, critical]
@@ -870,7 +870,7 @@ components:
           enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
-          enum: [planning, in_progress, on_hold, completed, cancelled]
+          enum: [planning, in_progress, on_hold, inactive, completed, cancelled]
         priority:
           type: string
           enum: [low, medium, high, critical]
@@ -923,7 +923,7 @@ components:
           enum: [web, desktop, mobile, enterprise, continuous, internal, vendor]
         status:
           type: string
-          enum: [planning, in_progress, on_hold, completed, cancelled]
+          enum: [planning, in_progress, on_hold, inactive, completed, cancelled]
         priority:
           type: string
           enum: [low, medium, high, critical]
