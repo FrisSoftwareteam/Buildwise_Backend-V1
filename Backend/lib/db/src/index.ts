@@ -1825,7 +1825,9 @@ export async function getUserById(id: number) {
 
 export async function getUserByEmail(email: string) {
   const db = await getDb();
-  const user = await db.collection<User>("users").findOne({ email });
+  const user = await db.collection<User>("users").findOne({
+    email: email.toLowerCase().trim(),
+  });
   return stripMongoId(user);
 }
 
