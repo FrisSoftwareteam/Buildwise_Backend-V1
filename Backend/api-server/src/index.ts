@@ -2,21 +2,25 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startTaskTimelineReminders } from "./lib/task-reminders";
 
-const rawPort = process.env["PORT"];
+export default app;
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+if (!process.env.VERCEL) {
+  const rawPort = process.env["PORT"];
+
+  if (!rawPort) {
+    throw new Error(
+      "PORT environment variable is required but was not provided.",
+    );
+  }
+
+  const port = Number(rawPort);
+
+  if (Number.isNaN(port) || port <= 0) {
+    throw new Error(`Invalid PORT value: "${rawPort}"`);
+  }
+
+  app.listen(port, () => {
+    logger.info({ port }, "Server listening");
+    startTaskTimelineReminders();
+  });
 }
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-app.listen(port, () => {
-  logger.info({ port }, "Server listening");
-  startTaskTimelineReminders();
-});
