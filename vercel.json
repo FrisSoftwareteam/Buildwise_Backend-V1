@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/api-server run build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
