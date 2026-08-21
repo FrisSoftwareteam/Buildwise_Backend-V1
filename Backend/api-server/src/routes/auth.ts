@@ -100,6 +100,17 @@ router.post("/auth/login", async (req, res) => {
     return res.json({ user: sanitizeUser(user) });
   } catch (e) {
     logger.error({ err: e }, "Login failed");
+    const message = e instanceof Error ? e.message : "";
+    if (/MONGODB_URI/i.test(message)) {
+      return res.status(503).json({
+        error: "Database is not configured. Set MONGODB_URI on the backend Vercel project.",
+      });
+    }
+    if (/ENOTFOUND|ECONNREFUSED|querySrv|MongoNetwork|MongoServer|authentication failed/i.test(message)) {
+      return res.status(503).json({
+        error: "Could not connect to MongoDB. Check MONGODB_URI and Atlas Network Access.",
+      });
+    }
     return res.status(500).json({ error: "Login failed" });
   }
 });

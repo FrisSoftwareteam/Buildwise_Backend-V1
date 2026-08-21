@@ -32,4 +32,19 @@ app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
 app.use("/api", router);
 
+app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
+  const message = err instanceof Error ? err.message : "Server error";
+  const status = /MONGODB_URI/i.test(message) ? 503 : 500;
+  res.status(status).json({
+    error: /MONGODB_URI/i.test(message)
+      ? "Database is not configured. Set MONGODB_URI on the backend Vercel project."
+      : message,
+  });
+});
+
 export default app;

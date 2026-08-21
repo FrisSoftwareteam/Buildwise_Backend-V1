@@ -270,19 +270,24 @@ const PASSWORD_HASH_PREFIX = "scrypt";
 const PASSWORD_SALT_BYTES = 16;
 const PASSWORD_KEYLEN = 64;
 
-const mongoUri = process.env.MONGODB_URI;
-
-if (!mongoUri) {
-  throw new Error(
-    "MONGODB_URI must be set. Did you forget to provision MongoDB?",
-  );
-}
-
-const dbName = process.env.MONGODB_DB ?? resolveDbName(mongoUri);
-const client = new MongoClient(mongoUri);
-
+let client: MongoClient | null = null;
 let dbPromise: Promise<Db> | null = null;
 let seedPromise: Promise<void> | null = null;
+
+function getMongoClient() {
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    throw new Error(
+      "MONGODB_URI must be set. Did you forget to provision MongoDB?",
+    );
+  }
+
+  client ??= new MongoClient(mongoUri);
+  return {
+    client,
+    dbName: process.env.MONGODB_DB ?? resolveDbName(mongoUri),
+  };
+}
 
 function resolveDbName(uri: string) {
   try {
@@ -301,7 +306,8 @@ function removeUndefined<T extends Record<string, unknown>>(value: T) {
 
 async function getDb() {
   try {
-    dbPromise ??= client.connect().then((connectedClient) => connectedClient.db(dbName));
+    const mongo = getMongoClient();
+    dbPromise ??= mongo.client.connect().then((connectedClient) => connectedClient.db(mongo.dbName));
     const db = await dbPromise;
     await ensureIndexes(db);
     seedPromise ??= ensureSeedData(db);
