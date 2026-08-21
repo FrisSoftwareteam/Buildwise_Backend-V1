@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 const allowlist = [
   "@google/generative-ai",
   "axios",
+  "cookie-parser",
   "cors",
   "date-fns",
   "express",
@@ -64,6 +65,9 @@ async function buildAll() {
     },
     minify: true,
     external: externals,
+    footer: {
+      js: "module.exports = module.exports.default ?? module.exports;",
+    },
     logLevel: "info",
   });
 }
