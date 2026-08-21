@@ -94,6 +94,13 @@ router.post("/agm/meetings", async (req, res) => {
       agenda: req.body.agenda || "",
       quorumRequired: Number(req.body.quorumRequired) || 50,
       attendeesExpected: Number(req.body.attendeesExpected) || 0,
+      attendeesPresent: Number(req.body.attendeesPresent) || 0,
+      chair: req.body.chair || "",
+      secretary: req.body.secretary || "",
+      noticeStatus: req.body.noticeStatus || "not_sent",
+      packStatus: req.body.packStatus || "draft",
+      minutes: req.body.minutes || "",
+      minutesStatus: req.body.minutesStatus || "pending",
     });
     res.status(201).json(meeting);
   } catch {
@@ -155,6 +162,9 @@ router.post("/agm/resolutions", async (req, res) => {
       title: req.body.title,
       description: req.body.description || "",
       status: req.body.status || "draft",
+      votesFor: 0,
+      votesAgainst: 0,
+      votesAbstain: 0,
     });
     res.status(201).json(resolution);
   } catch {
