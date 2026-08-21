@@ -147,6 +147,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      express:
+        specifier: ^5
+        version: 5.2.1
     devDependencies:
       prettier:
         specifier: ^3.8.1
