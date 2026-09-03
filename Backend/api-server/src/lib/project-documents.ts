@@ -27,10 +27,7 @@ const ALLOWED_EXT = new Set([
   ".jpeg",
 ]);
 
-const uploadRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../uploads/projects",
-);
+const uploadRoot = path.resolve(__dirname, "../../uploads/projects");
 
 export function isProjectDocumentKind(value: string): value is ProjectDocumentKind {
   return PROJECT_DOCUMENT_KIND_SET.has(value as ProjectDocumentKind);
