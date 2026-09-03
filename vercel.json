@@ -1,6 +1,1 @@
-{
-    "installCommand": "pnpm install --no-frozen-lockfile",
-    "rewrites": [
-          { "source": "/(.*)", "destination": "/index.js" }
-    ]
-}
+{ "installCommand": "pnpm install --no-frozen-lockfile", "rewrites": [ { "source": "/(.*)", "destination": "/api/index.js" } ] }
