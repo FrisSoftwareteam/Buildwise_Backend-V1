@@ -8,6 +8,7 @@ import vendorsRouter from "./vendors";
 import dashboardRouter from "./dashboard";
 import aiRouter from "./ai";
 import operationsRouter from "./operations";
+import kpisRouter from "./kpis";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(vendorsRouter);
 router.use(dashboardRouter);
 router.use(aiRouter);
 router.use(operationsRouter);
+router.use(kpisRouter);
 
 export default router;
