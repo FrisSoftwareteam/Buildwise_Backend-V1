@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { createUser, getUserByEmail, sanitizeUser, verifyUserPassword } from "@workspace/db";
+import { createUser, getUserByEmail, sanitizeUser } from "@workspace/db";
 import { logger } from "../lib/logger";
 import {
   buildAuthorizeUrl,
@@ -16,9 +16,11 @@ import {
 const router: IRouter = Router();
 
 router.get("/auth/providers", (_req, res) => {
+  // Google sign-in is intentionally disabled: BuildWise accounts are
+  // provisioned through the First Registrars Microsoft tenant only.
   return res.json({
-    google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-    microsoft: true,
+    google: false,
+    microsoft: isMicrosoftOAuthConfigured(),
   });
 });
 
@@ -83,60 +85,20 @@ router.get("/auth/oauth/microsoft/callback", async (req, res) => {
   }
 });
 
-router.post("/auth/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-    const user = await getUserByEmail(email.toLowerCase().trim());
-    if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-    const isPasswordValid = await verifyUserPassword(user, password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-    return res.json({ user: sanitizeUser(user) });
-  } catch (e) {
-    logger.error({ err: e }, "Login failed");
-    const message = e instanceof Error ? e.message : "";
-    if (/MONGODB_URI/i.test(message)) {
-      return res.status(503).json({
-        error: "Database is not configured. Set MONGODB_URI on the backend Vercel project.",
-      });
-    }
-    if (/ENOTFOUND|ECONNREFUSED|querySrv|MongoNetwork|MongoServer|authentication failed/i.test(message)) {
-      return res.status(503).json({
-        error: "Could not connect to MongoDB. Check MONGODB_URI and Atlas Network Access.",
-      });
-    }
-    return res.status(500).json({ error: "Login failed" });
-  }
+router.post("/auth/login", async (_req, res) => {
+  // Password sign-in is disabled: BuildWise accounts sign in exclusively
+  // through the First Registrars Microsoft tenant (see /auth/oauth/microsoft/start).
+  return res.status(403).json({
+    error: "Password sign-in is disabled. Sign in with your First Registrars Microsoft account.",
+  });
 });
 
-router.post("/auth/signup", async (req, res) => {
-  try {
-    const { name, email, password, role, department } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "Name, email and password are required" });
-    }
-    const existing = await getUserByEmail(email.toLowerCase().trim());
-    if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists" });
-    }
-    const user = await createUser({
-      name,
-      email: email.toLowerCase().trim(),
-      password,
-      role: role || "developer",
-      department: department || "Engineering",
-    });
-    return res.status(201).json({ user: sanitizeUser(user) });
-  } catch (e) {
-    logger.error({ err: e }, "Signup failed");
-    return res.status(500).json({ error: "Signup failed" });
-  }
+router.post("/auth/signup", async (_req, res) => {
+  // Self-service signup is disabled: BuildWise accounts are provisioned
+  // automatically on first Microsoft sign-in (see /auth/oauth/microsoft/callback).
+  return res.status(403).json({
+    error: "Self-service signup is disabled. Sign in with your First Registrars Microsoft account.",
+  });
 });
 
 router.post("/auth/logout", (_req, res) => {
