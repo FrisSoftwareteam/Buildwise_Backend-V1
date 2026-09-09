@@ -1,20 +1,37 @@
 import { Router, type IRouter } from "express";
 import {
+  assignAgmStaff,
+  completeAgmVenueInspection,
+  confirmAgmEngagementLogged,
   createAgmAction,
+  createAgmEngagement,
   createAgmMeeting,
   createAgmResolution,
   createPlaybook,
   createTimeLog,
+  decideAgmApproval,
+  getAgmEngagementById,
+  getAgmEngagementsSummary,
   getAgmWorkspace,
   getOperationsSummary,
+  initiateAgmVenueInspection,
+  linkAgmEngagementToMeeting,
   listAgmActions,
+  listAgmEngagements,
   listAgmMeetings,
   listAgmResolutions,
   listOpsAlerts,
   listOpsApprovals,
   listPlaybooks,
   listTimeLogs,
+  notifyAgmDepartments,
+  recordAgmProxyCapture,
   recordGovernanceEvent,
+  requestAgmItBriefing,
+  sendAgmDemandNotice,
+  sendAgmLogisticsPack,
+  setAgmDividendPosition,
+  submitAgmItemsRequired,
   updateAgmAction,
   updateAgmAttendee,
   updateAgmDocument,
@@ -306,6 +323,204 @@ router.post("/time-logs", async (req, res) => {
     res.status(201).json(log);
   } catch {
     res.status(500).json({ error: "Failed to log time" });
+  }
+});
+router.get("/agm/engagements", async (_req, res) => {
+  try {
+    res.json(await listAgmEngagements());
+  } catch {
+    res.status(500).json({ error: "Failed to load AGM requests" });
+  }
+});
+
+router.get("/agm/engagements/summary", async (_req, res) => {
+  try {
+    res.json(await getAgmEngagementsSummary());
+  } catch {
+    res.status(500).json({ error: "Failed to load AGM report" });
+  }
+});
+
+router.get("/agm/engagements/:id", async (req, res) => {
+  try {
+    const engagement = await getAgmEngagementById(parseInt(req.params.id));
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to load AGM request" });
+  }
+});
+
+router.post("/agm/engagements", async (req, res) => {
+  try {
+    const engagement = await createAgmEngagement({
+      clientCompany: req.body.clientCompany,
+      contactName: req.body.contactName,
+      contactEmail: req.body.contactEmail,
+      submittedBy: req.body.submittedBy,
+      meetingFormat: req.body.meetingFormat === "virtual" ? "virtual" : "physical",
+      meetingDate: req.body.meetingDate,
+      meetingTime: req.body.meetingTime,
+      venue: req.body.venue,
+      meetingLink: req.body.meetingLink,
+      meetingPassword: req.body.meetingPassword,
+      notes: req.body.notes,
+    });
+    res.status(201).json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to log AGM request" });
+  }
+});
+
+router.post("/agm/engagements/:id/log", async (req, res) => {
+  try {
+    const engagement = await confirmAgmEngagementLogged(parseInt(req.params.id), req.body.actor || "Admin");
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to log the request into the system" });
+  }
+});
+
+router.post("/agm/engagements/:id/venue-inspection", async (req, res) => {
+  try {
+    const notified = Array.isArray(req.body.notified) ? req.body.notified.filter(Boolean) : [];
+    const engagement = await initiateAgmVenueInspection(parseInt(req.params.id), req.body.actor || "Admin", notified, req.body.notes);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to initiate the venue inspection" });
+  }
+});
+
+router.post("/agm/engagements/:id/venue-inspection/complete", async (req, res) => {
+  try {
+    const engagement = await completeAgmVenueInspection(parseInt(req.params.id), req.body.actor || "Admin", req.body.notes);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to complete the venue inspection" });
+  }
+});
+
+router.post("/agm/engagements/:id/dividend", async (req, res) => {
+  try {
+    const position = ["defaulting", "proposing", "none"].includes(req.body.position) ? req.body.position : "none";
+    const engagement = await setAgmDividendPosition(parseInt(req.params.id), req.body.actor || "Admin", position, req.body.notes);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to update the dividend position" });
+  }
+});
+
+router.post("/agm/engagements/:id/notify-departments", async (req, res) => {
+  try {
+    const departments = Array.isArray(req.body.departments) ? req.body.departments.filter(Boolean) : [];
+    const engagement = await notifyAgmDepartments(parseInt(req.params.id), req.body.actor || "Admin", departments);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to notify departments" });
+  }
+});
+
+router.post("/agm/engagements/:id/demand-notice", async (req, res) => {
+  try {
+    const engagement = await sendAgmDemandNotice(parseInt(req.params.id), req.body.actor || "Accounts", {
+      designatedAccount: req.body.designatedAccount || "",
+      preparedBy: req.body.preparedBy || "",
+      sentBy: req.body.sentBy || "",
+      senderEmail: req.body.senderEmail || "",
+    });
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to send the demand notice" });
+  }
+});
+
+router.post("/agm/engagements/:id/it-briefing", async (req, res) => {
+  try {
+    const engagement = await requestAgmItBriefing(parseInt(req.params.id), req.body.actor || "Admin");
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to request the IT briefing" });
+  }
+});
+
+router.post("/agm/engagements/:id/staff", async (req, res) => {
+  try {
+    const staff = Array.isArray(req.body.staff)
+      ? req.body.staff
+          .filter((member: { name?: string }) => member && member.name)
+          .map((member: { name: string; email?: string; role?: string }) => ({
+            name: member.name,
+            email: member.email || "",
+            role: member.role || "",
+          }))
+      : [];
+    const engagement = await assignAgmStaff(parseInt(req.params.id), req.body.actor || "Admin", staff);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to assign staff" });
+  }
+});
+
+router.post("/agm/engagements/:id/items", async (req, res) => {
+  try {
+    const items = Array.isArray(req.body.items) ? req.body.items.filter(Boolean) : [];
+    const approvers = Array.isArray(req.body.approvers) ? req.body.approvers.filter(Boolean) : [];
+    const engagement = await submitAgmItemsRequired(parseInt(req.params.id), req.body.actor || "IT", items, approvers);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to submit the item list" });
+  }
+});
+
+router.post("/agm/engagements/:id/approval", async (req, res) => {
+  try {
+    const decision = req.body.decision === "rejected" ? "rejected" : "approved";
+    const engagement = await decideAgmApproval(parseInt(req.params.id), req.body.actor || "Approver", decision, req.body.reason);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to record the decision" });
+  }
+});
+
+router.post("/agm/engagements/:id/logistics", async (req, res) => {
+  try {
+    const recipients = Array.isArray(req.body.recipients) ? req.body.recipients.filter(Boolean) : [];
+    const engagement = await sendAgmLogisticsPack(parseInt(req.params.id), req.body.actor || "Logistics", recipients);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to send the logistics pack" });
+  }
+});
+
+router.post("/agm/engagements/:id/proxy", async (req, res) => {
+  try {
+    const status = req.body.status === "completed" ? "completed" : "in_progress";
+    const engagement = await recordAgmProxyCapture(parseInt(req.params.id), req.body.actor || "Admin", Number(req.body.capturedCount) || 0, status);
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to record proxy capture" });
+  }
+});
+
+router.post("/agm/engagements/:id/send-to-board", async (req, res) => {
+  try {
+    const engagement = await linkAgmEngagementToMeeting(parseInt(req.params.id), req.body.actor || "Admin");
+    if (!engagement) return res.status(404).json({ error: "AGM request not found" });
+    res.json(engagement);
+  } catch {
+    res.status(500).json({ error: "Failed to send the AGM to the board" });
   }
 });
 

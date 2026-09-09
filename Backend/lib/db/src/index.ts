@@ -199,6 +199,107 @@ export interface AgmResolution {
   updatedAt: Date;
 }
 
+export interface AgmEngagementTimelineEntry {
+  step: number;
+  status: string;
+  actor: string;
+  action: string;
+  detail: string;
+  at: Date;
+}
+
+export interface AgmEngagementStaff {
+  name: string;
+  email: string;
+  role: string;
+  notifiedAt?: Date | null;
+}
+
+export interface AgmEngagementItem {
+  description: string;
+  addedBy: string;
+  addedAt: Date;
+}
+
+export interface AgmEngagement {
+  id: number;
+  clientCompany: string;
+  contactName: string;
+  contactEmail?: string | null;
+  submittedBy: string;
+  meetingFormat: "physical" | "virtual";
+  meetingDate: string;
+  meetingTime: string;
+  venue?: string | null;
+  meetingLink?: string | null;
+  meetingPassword?: string | null;
+  notes?: string | null;
+  step: number;
+  status: string;
+  loggedBy?: string | null;
+  loggedAt?: Date | null;
+  venueInspection: {
+    status: string;
+    initiatedBy?: string | null;
+    initiatedAt?: Date | null;
+    notified: string[];
+    notes?: string | null;
+  };
+  dividendPosition: {
+    status: string;
+    setBy?: string | null;
+    setAt?: Date | null;
+    notes?: string | null;
+  };
+  departmentsNotified: {
+    departments: string[];
+    notifiedBy?: string | null;
+    notifiedAt?: Date | null;
+  };
+  demandNotice: {
+    status: string;
+    designatedAccount?: string | null;
+    preparedBy?: string | null;
+    sentBy?: string | null;
+    senderEmail?: string | null;
+    sentAt?: Date | null;
+  };
+  itBriefing: {
+    status: string;
+    requestedBy?: string | null;
+    requestedAt?: Date | null;
+    infoReceivedAt?: Date | null;
+  };
+  staffAssigned: AgmEngagementStaff[];
+  itemsRequired: AgmEngagementItem[];
+  approval: {
+    status: string;
+    approvers: string[];
+    requestedBy?: string | null;
+    requestedAt?: Date | null;
+    decidedBy?: string | null;
+    decidedAt?: Date | null;
+    reason?: string | null;
+    rounds: number;
+  };
+  logistics: {
+    status: string;
+    recipients: string[];
+    sentBy?: string | null;
+    sentAt?: Date | null;
+  };
+  proxyForm: {
+    status: string;
+    capturedCount: number;
+    updatedBy?: string | null;
+    updatedAt?: Date | null;
+  };
+  timeline: AgmEngagementTimelineEntry[];
+  linkedMeetingId?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface OpsAlert {
   id: number;
   severity: string;
@@ -258,6 +359,7 @@ type CounterName =
   | "agmDocuments"
   | "agmAttendees"
   | "agmActions"
+  | "agmEngagements"
   | "governanceAudit";
 
 type CounterDocument = {
@@ -1087,8 +1189,8 @@ async function ensureWorkItemSeed(db: Db) {
       name: "Sprint 12 — Registry Core",
       goal: "Ship shareholder search and dividend file export for Web Estock.",
       status: "active",
-      startDate: "2026-08-04",
-      endDate: "2026-08-22",
+      startDate: "2026-08-25",
+      endDate: "2026-09-12",
       createdAt: now,
     },
     {
@@ -1097,8 +1199,8 @@ async function ensureWorkItemSeed(db: Db) {
       name: "Sprint 11 — Data Integrity",
       goal: "Close register reconciliation defects from the last release.",
       status: "completed",
-      startDate: "2026-07-14",
-      endDate: "2026-08-01",
+      startDate: "2026-08-04",
+      endDate: "2026-08-22",
       createdAt: now,
     },
     {
@@ -1107,8 +1209,8 @@ async function ensureWorkItemSeed(db: Db) {
       name: "Sprint 4 — Rebuild Foundations",
       goal: "Replace legacy requisition forms with the new workflow.",
       status: "active",
-      startDate: "2026-08-04",
-      endDate: "2026-08-22",
+      startDate: "2026-08-25",
+      endDate: "2026-09-12",
       createdAt: now,
     },
     {
@@ -1117,8 +1219,8 @@ async function ensureWorkItemSeed(db: Db) {
       name: "Sprint 5 — Approvals",
       goal: "Add multi-level approval routing and an audit trail.",
       status: "planned",
-      startDate: "2026-08-25",
-      endDate: "2026-09-12",
+      startDate: "2026-09-15",
+      endDate: "2026-10-03",
       createdAt: now,
     },
   ];
@@ -1136,7 +1238,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 4,
       reporterId: 1,
       storyPoints: 8,
-      dueDate: "2026-08-18",
+      dueDate: "2026-09-08",
       label: "estock",
       position: 1,
       createdAt: now,
@@ -1154,7 +1256,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 3,
       reporterId: 1,
       storyPoints: 5,
-      dueDate: "2026-08-20",
+      dueDate: "2026-09-10",
       label: "dividends",
       position: 2,
       createdAt: now,
@@ -1172,7 +1274,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 4,
       reporterId: 2,
       storyPoints: 3,
-      dueDate: "2026-08-10",
+      dueDate: "2026-08-31",
       label: "transfers",
       position: 3,
       createdAt: now,
@@ -1190,7 +1292,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 3,
       reporterId: 1,
       storyPoints: 5,
-      dueDate: "2026-08-01",
+      dueDate: "2026-08-22",
       label: "data-quality",
       position: 4,
       createdAt: now,
@@ -1208,7 +1310,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: null,
       reporterId: 2,
       storyPoints: 13,
-      dueDate: "2026-09-12",
+      dueDate: "2026-10-03",
       label: "probate",
       position: 5,
       createdAt: now,
@@ -1226,7 +1328,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 2,
       reporterId: 1,
       storyPoints: 5,
-      dueDate: "2026-09-05",
+      dueDate: "2026-09-26",
       label: "kyc",
       position: 6,
       createdAt: now,
@@ -1244,7 +1346,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 4,
       reporterId: 2,
       storyPoints: 8,
-      dueDate: "2026-08-19",
+      dueDate: "2026-09-09",
       label: "v2",
       position: 1,
       createdAt: now,
@@ -1262,7 +1364,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 2,
       reporterId: 1,
       storyPoints: 5,
-      dueDate: "2026-08-21",
+      dueDate: "2026-09-11",
       label: "approvals",
       position: 2,
       createdAt: now,
@@ -1280,7 +1382,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 3,
       reporterId: 4,
       storyPoints: 2,
-      dueDate: "2026-08-16",
+      dueDate: "2026-09-06",
       label: "attachments",
       position: 3,
       createdAt: now,
@@ -1298,7 +1400,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: null,
       reporterId: 1,
       storyPoints: 8,
-      dueDate: "2026-09-12",
+      dueDate: "2026-10-03",
       label: "finance",
       position: 4,
       createdAt: now,
@@ -1316,7 +1418,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 4,
       reporterId: 2,
       storyPoints: 3,
-      dueDate: "2026-08-28",
+      dueDate: "2026-09-18",
       label: "compliance",
       position: 5,
       createdAt: now,
@@ -1334,7 +1436,7 @@ async function ensureWorkItemSeed(db: Db) {
       assigneeId: 4,
       reporterId: 1,
       storyPoints: 3,
-      dueDate: "2026-08-17",
+      dueDate: "2026-09-07",
       label: "security",
       position: 1,
       createdAt: now,
@@ -2476,6 +2578,7 @@ export async function getOperationsSummary() {
     activePlaybooks: playbooks.filter((playbook) => playbook.status === "active").length,
     minutesLogged: timeLogs.reduce((sum, log) => sum + log.minutes, 0),
     openActions: (await listAgmActions()).filter((action) => action.status !== "completed").length,
+    openEngagements: (await listAgmEngagements()).filter((engagement) => !["on_agm_board", "rejected"].includes(engagement.status)).length,
   };
 }
 
@@ -2571,4 +2674,446 @@ export async function getAgmWorkspace(meetingId: number) {
     ? (present / meeting.attendeesExpected) * 100 >= meeting.quorumRequired
     : present > 0;
   return { meeting, documents, attendees, resolutions, actions, audit, present, quorumMet };
+}
+const AGM_ENGAGEMENT_STEP_LABELS: Record<number, string> = {
+  1: "Client notice received",
+  2: "Logged in system",
+  3: "Venue inspection",
+  4: "Dividend position checked",
+  5: "Departments notified",
+  6: "Demand notice sent",
+  7: "IT briefing requested",
+  8: "Staff assigned",
+  9: "Items required submitted",
+  10: "Approval decision",
+  11: "Resubmission loop",
+  12: "Logistics pack sent",
+  13: "Proxy form capture",
+};
+
+function newAgmEngagementDoc(
+  input: {
+    clientCompany: string;
+    contactName: string;
+    contactEmail?: string | null;
+    submittedBy: string;
+    meetingFormat: "physical" | "virtual";
+    meetingDate: string;
+    meetingTime: string;
+    venue?: string | null;
+    meetingLink?: string | null;
+    meetingPassword?: string | null;
+    notes?: string | null;
+  },
+  id: number,
+  now: Date,
+): AgmEngagement {
+  return {
+    id,
+    clientCompany: input.clientCompany,
+    contactName: input.contactName,
+    contactEmail: input.contactEmail ?? null,
+    submittedBy: input.submittedBy,
+    meetingFormat: input.meetingFormat,
+    meetingDate: input.meetingDate,
+    meetingTime: input.meetingTime,
+    venue: input.venue ?? null,
+    meetingLink: input.meetingLink ?? null,
+    meetingPassword: input.meetingPassword ?? null,
+    notes: input.notes ?? null,
+    step: 1,
+    status: "submitted",
+    loggedBy: null,
+    loggedAt: null,
+    venueInspection: { status: "pending", initiatedBy: null, initiatedAt: null, notified: [], notes: null },
+    dividendPosition: { status: "pending", setBy: null, setAt: null, notes: null },
+    departmentsNotified: { departments: [], notifiedBy: null, notifiedAt: null },
+    demandNotice: { status: "not_applicable", designatedAccount: null, preparedBy: null, sentBy: null, senderEmail: null, sentAt: null },
+    itBriefing: { status: "pending", requestedBy: null, requestedAt: null, infoReceivedAt: null },
+    staffAssigned: [],
+    itemsRequired: [],
+    approval: { status: "not_started", approvers: [], requestedBy: null, requestedAt: null, decidedBy: null, decidedAt: null, reason: null, rounds: 0 },
+    logistics: { status: "pending", recipients: [], sentBy: null, sentAt: null },
+    proxyForm: { status: "pending", capturedCount: 0, updatedBy: null, updatedAt: null },
+    timeline: [
+      {
+        step: 1,
+        status: "submitted",
+        actor: input.submittedBy,
+        action: "AGM notice received",
+        detail: `${input.clientCompany} informed Marketing & Business Development of a forthcoming AGM.`,
+        at: now,
+      },
+    ],
+    linkedMeetingId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+async function pushAgmEngagementEvent(
+  db: Db,
+  id: number,
+  entry: Omit<AgmEngagementTimelineEntry, "at">,
+  extraSet: Record<string, unknown> = {},
+) {
+  const now = new Date();
+  await db.collection<AgmEngagement>("agmEngagements").updateOne(
+    { id },
+    {
+      $push: { timeline: { ...entry, at: now } },
+      $set: removeUndefined({ ...extraSet, step: entry.step, status: entry.status, updatedAt: now }),
+    },
+  );
+  return stripMongoId(await db.collection<AgmEngagement>("agmEngagements").findOne({ id }));
+}
+
+export async function listAgmEngagements() {
+  const db = await getDb();
+  return stripMongoIds(await db.collection<AgmEngagement>("agmEngagements").find().sort({ createdAt: -1 }).toArray());
+}
+
+export async function getAgmEngagementById(id: number) {
+  const db = await getDb();
+  return stripMongoId(await db.collection<AgmEngagement>("agmEngagements").findOne({ id }));
+}
+
+export async function createAgmEngagement(input: {
+  clientCompany: string;
+  contactName: string;
+  contactEmail?: string;
+  submittedBy: string;
+  meetingFormat: "physical" | "virtual";
+  meetingDate: string;
+  meetingTime: string;
+  venue?: string;
+  meetingLink?: string;
+  meetingPassword?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  const now = new Date();
+  const doc = newAgmEngagementDoc(input, await nextSequence("agmEngagements"), now);
+  await db.collection<AgmEngagement>("agmEngagements").insertOne(doc);
+  return doc;
+}
+
+export async function confirmAgmEngagementLogged(id: number, actor: string) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    { step: 2, status: "logged", actor, action: "Logged in system", detail: `${actor} (Admin) keyed the AGM details into the system.` },
+    { loggedBy: actor, loggedAt: new Date() },
+  );
+}
+
+export async function initiateAgmVenueInspection(id: number, actor: string, notified: string[], notes?: string) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    {
+      step: 3,
+      status: "venue_inspection",
+      actor,
+      action: "Venue inspection initiated",
+      detail: `${actor} initiated the venue inspection; notified ${notified.join(", ") || "concerned units"}.`,
+    },
+    {
+      "venueInspection.status": "initiated",
+      "venueInspection.initiatedBy": actor,
+      "venueInspection.initiatedAt": new Date(),
+      "venueInspection.notified": notified,
+      "venueInspection.notes": notes ?? null,
+    },
+  );
+}
+
+export async function completeAgmVenueInspection(id: number, actor: string, notes?: string) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    { step: 3, status: "venue_inspection", actor, action: "Venue inspection completed", detail: `${actor} confirmed the venue inspection is complete.` },
+    { "venueInspection.status": "completed", "venueInspection.notes": notes ?? null },
+  );
+}
+
+export async function setAgmDividendPosition(id: number, actor: string, position: "defaulting" | "proposing" | "none", notes?: string) {
+  const db = await getDb();
+  const label = position === "defaulting" ? "defaulting on dividend" : position === "proposing" ? "proposing a dividend" : "not proposing a dividend";
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    { step: 4, status: "dividend_checked", actor, action: "Dividend position checked", detail: `${actor} confirmed the company is ${label}.` },
+    {
+      "dividendPosition.status": position,
+      "dividendPosition.setBy": actor,
+      "dividendPosition.setAt": new Date(),
+      "dividendPosition.notes": notes ?? null,
+      "demandNotice.status": position === "proposing" ? "pending" : "not_applicable",
+    },
+  );
+}
+
+export async function notifyAgmDepartments(id: number, actor: string, departments: string[]) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    {
+      step: 5,
+      status: "departments_notified",
+      actor,
+      action: "Departments notified",
+      detail: `${actor} informed ${departments.join(", ") || "relevant departments"} of the AGM through the AGM portal.`,
+    },
+    {
+      "departmentsNotified.departments": departments,
+      "departmentsNotified.notifiedBy": actor,
+      "departmentsNotified.notifiedAt": new Date(),
+    },
+  );
+}
+
+export async function sendAgmDemandNotice(
+  id: number,
+  actor: string,
+  input: { designatedAccount: string; preparedBy: string; sentBy: string; senderEmail: string },
+) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    {
+      step: 6,
+      status: "demand_notice_sent",
+      actor,
+      action: "Demand notice sent",
+      detail: `${input.sentBy} sent the demand notice from ${input.senderEmail}, instructing payment of dividend funds into ${input.designatedAccount}.`,
+    },
+    {
+      "demandNotice.status": "sent",
+      "demandNotice.designatedAccount": input.designatedAccount,
+      "demandNotice.preparedBy": input.preparedBy,
+      "demandNotice.sentBy": input.sentBy,
+      "demandNotice.senderEmail": input.senderEmail,
+      "demandNotice.sentAt": new Date(),
+    },
+  );
+}
+
+export async function requestAgmItBriefing(id: number, actor: string) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    { step: 7, status: "it_briefing_requested", actor, action: "IT briefing requested", detail: `${actor} emailed IT to get information about the meeting.` },
+    { "itBriefing.status": "requested", "itBriefing.requestedBy": actor, "itBriefing.requestedAt": new Date() },
+  );
+}
+
+export async function assignAgmStaff(id: number, actor: string, staff: { name: string; email: string; role: string }[]) {
+  const db = await getDb();
+  const now = new Date();
+  const entries: AgmEngagementStaff[] = staff.map((member) => ({ ...member, notifiedAt: now }));
+  const names = staff.map((member) => member.name).join(", ") || "no staff";
+  await db.collection<AgmEngagement>("agmEngagements").updateOne(
+    { id },
+    {
+      $push: { staffAssigned: { $each: entries } },
+      $set: { step: 8, status: "staff_assigned", updatedAt: now },
+    },
+  );
+  return pushAgmEngagementEvent(db, id, {
+    step: 8,
+    status: "staff_assigned",
+    actor,
+    action: "Staff assigned",
+    detail: `${actor} assigned ${names} to the AGM; assignment emails were sent automatically.`,
+  });
+}
+
+export async function submitAgmItemsRequired(id: number, actor: string, items: string[], approvers: string[]) {
+  const db = await getDb();
+  const now = new Date();
+  const entries: AgmEngagementItem[] = items.map((description) => ({ description, addedBy: actor, addedAt: now }));
+  const existing = await db.collection<AgmEngagement>("agmEngagements").findOne({ id });
+  const rounds = (existing?.approval?.rounds ?? 0) + 1;
+  await db.collection<AgmEngagement>("agmEngagements").updateOne(
+    { id },
+    {
+      $push: { itemsRequired: { $each: entries } },
+      $set: {
+        step: 9,
+        status: "items_submitted",
+        "approval.status": "pending",
+        "approval.approvers": approvers,
+        "approval.requestedBy": actor,
+        "approval.requestedAt": now,
+        "approval.reason": null,
+        "approval.rounds": rounds,
+        updatedAt: now,
+      },
+    },
+  );
+  return pushAgmEngagementEvent(db, id, {
+    step: 9,
+    status: "items_submitted",
+    actor,
+    action: rounds > 1 ? "Item list resubmitted" : "Item list submitted",
+    detail: `IT ${rounds > 1 ? "resubmitted the adjusted" : "submitted the"} list of items required for the AGM; confirmation requested from ${approvers.join(", ") || "approvers"}.`,
+  });
+}
+
+export async function decideAgmApproval(id: number, actor: string, decision: "approved" | "rejected", reason?: string) {
+  const db = await getDb();
+  const now = new Date();
+  if (decision === "approved") {
+    await db.collection<AgmEngagement>("agmEngagements").updateOne(
+      { id },
+      {
+        $set: {
+          step: 12,
+          status: "approved",
+          "approval.status": "approved",
+          "approval.decidedBy": actor,
+          "approval.decidedAt": now,
+          "approval.reason": null,
+          updatedAt: now,
+        },
+      },
+    );
+    return pushAgmEngagementEvent(db, id, { step: 10, status: "approved", actor, action: "Items approved", detail: `${actor} confirmed the AGM item list.` });
+  }
+  await db.collection<AgmEngagement>("agmEngagements").updateOne(
+    { id },
+    {
+      $set: {
+        step: 11,
+        status: "rejected",
+        "approval.status": "rejected",
+        "approval.decidedBy": actor,
+        "approval.decidedAt": now,
+        "approval.reason": reason ?? null,
+        updatedAt: now,
+      },
+    },
+  );
+  return pushAgmEngagementEvent(db, id, {
+    step: 11,
+    status: "rejected",
+    actor,
+    action: "Items rejected",
+    detail: `${actor} rejected the AGM item list${reason ? `: ${reason}` : "."} IT will adjust and resend until accepted.`,
+  });
+}
+
+export async function sendAgmLogisticsPack(id: number, actor: string, recipients: string[]) {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    {
+      step: 12,
+      status: "logistics_sent",
+      actor,
+      action: "Logistics pack sent",
+      detail: `${actor} (Logistics) emailed the item list and the capturing/proxy form to ${recipients.join(", ") || "Admin"}.`,
+    },
+    {
+      "logistics.status": "sent",
+      "logistics.recipients": recipients,
+      "logistics.sentBy": actor,
+      "logistics.sentAt": new Date(),
+    },
+  );
+}
+
+export async function recordAgmProxyCapture(id: number, actor: string, capturedCount: number, status: "in_progress" | "completed") {
+  const db = await getDb();
+  return pushAgmEngagementEvent(
+    db,
+    id,
+    {
+      step: 13,
+      status: status === "completed" ? "ready" : "proxy_capturing",
+      actor,
+      action: "Proxy form capture",
+      detail: `${actor} recorded ${capturedCount} captured proxy form${capturedCount === 1 ? "" : "s"}${status === "completed" ? "; the AGM is ready to go on the board." : "."}`,
+    },
+    {
+      "proxyForm.status": status,
+      "proxyForm.capturedCount": capturedCount,
+      "proxyForm.updatedBy": actor,
+      "proxyForm.updatedAt": new Date(),
+    },
+  );
+}
+
+export async function linkAgmEngagementToMeeting(id: number, actor: string) {
+  const db = await getDb();
+  const engagement = stripMongoId(await db.collection<AgmEngagement>("agmEngagements").findOne({ id }));
+  if (!engagement) return null;
+  if (engagement.linkedMeetingId) return engagement;
+  const meeting = await createAgmMeeting({
+    title: `${engagement.clientCompany} AGM`,
+    company: engagement.clientCompany,
+    meetingDate: engagement.meetingDate,
+    venue: engagement.meetingFormat === "virtual" ? (engagement.meetingLink || "Virtual meeting") : (engagement.venue || "TBC"),
+    status: "planning",
+    agenda: engagement.notes || "",
+    quorumRequired: 50,
+    attendeesExpected: 0,
+    attendeesPresent: 0,
+    chair: "",
+    secretary: "",
+    noticeStatus: "not_sent",
+    noticeSentAt: null,
+    packStatus: "draft",
+    minutes: "",
+    minutesStatus: "pending",
+  });
+  await db.collection<AgmEngagement>("agmEngagements").updateOne(
+    { id },
+    { $set: { linkedMeetingId: meeting.id, status: "on_agm_board", updatedAt: new Date() } },
+  );
+  return pushAgmEngagementEvent(db, id, {
+    step: 13,
+    status: "on_agm_board",
+    actor,
+    action: "Sent to AGM board",
+    detail: `${actor} opened the meeting-day workspace for ${engagement.clientCompany}.`,
+  });
+}
+
+export async function getAgmEngagementsSummary() {
+  const [engagements, meetings] = await Promise.all([listAgmEngagements(), listAgmMeetings()]);
+  const byStep: Record<number, number> = {};
+  for (let step = 1; step <= 13; step += 1) byStep[step] = 0;
+  let rejected = 0;
+  let ready = 0;
+  let onBoard = 0;
+  for (const engagement of engagements) {
+    if (engagement.status === "rejected") rejected += 1;
+    else if (engagement.status === "on_agm_board") onBoard += 1;
+    else if (engagement.status === "ready") ready += 1;
+    else byStep[engagement.step] = (byStep[engagement.step] || 0) + 1;
+  }
+  const live = meetings.filter((meeting) => ["notice_issued", "in_session", "voting"].includes(meeting.status));
+  const upcoming = engagements
+    .filter((engagement) => !["on_agm_board", "rejected"].includes(engagement.status))
+    .sort((a, b) => a.meetingDate.localeCompare(b.meetingDate))
+    .slice(0, 8);
+  return {
+    total: engagements.length,
+    byStep,
+    stepLabels: AGM_ENGAGEMENT_STEP_LABELS,
+    rejected,
+    ready,
+    onBoard,
+    live,
+    upcoming,
+  };
 }
