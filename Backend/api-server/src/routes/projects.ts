@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
 import {
+  createMilestone,
   createProject,
   createSprint,
   createTask,
   deleteProject,
   getProjectById,
+  listMilestonesByProject,
   listProjects,
   listSprintsByProject,
   listTasksByProject,
@@ -237,6 +239,39 @@ router.post("/projects/:projectId/tasks", async (req, res) => {
     res.status(201).json(task);
   } catch (e) {
     res.status(500).json({ error: "Failed to create task" });
+  }
+});
+
+// MILESTONES
+router.get("/projects/:projectId/milestones", async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId);
+    const milestones = await listMilestonesByProject(projectId);
+    res.json(milestones);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to fetch milestones" });
+  }
+});
+
+router.post("/projects/:projectId/milestones", async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.projectId);
+    const { title, dueDate } = req.body;
+    if (!title || !String(title).trim()) {
+      return res.status(400).json({ error: "Every milestone needs a title" });
+    }
+    const existing = await listMilestonesByProject(projectId);
+    const position = existing.length;
+    const milestone = await createMilestone({
+      projectId,
+      title: String(title).trim(),
+      dueDate: dueDate || null,
+      done: false,
+      position,
+    });
+    res.status(201).json(milestone);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to create milestone" });
   }
 });
 

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { createUser, getUserByEmail, sanitizeUser } from "@workspace/db";
+import { createUser, getUserByEmail, sanitizeUser, updateUser } from "@workspace/db";
 import { logger } from "../lib/logger";
 import {
   buildAuthorizeUrl,
@@ -74,6 +74,11 @@ router.get("/auth/oauth/microsoft/callback", async (req, res) => {
         role: "developer",
         department: "Engineering",
       });
+    } else if (profile.name && profile.name !== user.name) {
+      // Keep the stored name in sync with the signed-in Microsoft account so the
+      // UI always shows the name bound to this email, not a stale/placeholder
+      // value from whenever the account record was first created.
+      user = (await updateUser(user.id, { name: profile.name })) ?? user;
     }
 
     return res.redirect(frontendSuccessRedirect(redirectTo, sanitizeUser(user)));

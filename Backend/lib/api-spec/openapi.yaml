@@ -336,6 +336,106 @@ paths:
         "204":
           description: Deleted
 
+  # ---- MILESTONES ----
+  /projects/{projectId}/milestones:
+    get:
+      operationId: listMilestones
+      tags: [milestones]
+      summary: List milestones for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Milestones list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Milestone"
+    post:
+      operationId: createMilestone
+      tags: [milestones]
+      summary: Add a milestone to a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMilestoneBody"
+      responses:
+        "201":
+          description: Created milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+
+  /milestones/{id}:
+    get:
+      operationId: getMilestone
+      tags: [milestones]
+      summary: Get a milestone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+    put:
+      operationId: updateMilestone
+      tags: [milestones]
+      summary: Update a milestone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMilestoneBody"
+      responses:
+        "200":
+          description: Updated milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+    delete:
+      operationId: deleteMilestone
+      tags: [milestones]
+      summary: Delete a milestone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ---- SPRINTS ----
   /projects/{projectId}/sprints:
     get:
@@ -1119,6 +1219,65 @@ components:
         label:
           type: string
           nullable: true
+        position:
+          type: integer
+
+    # MILESTONES
+    Milestone:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        title:
+          type: string
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        done:
+          type: boolean
+        position:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - projectId
+        - title
+        - done
+        - position
+        - createdAt
+        - updatedAt
+
+    CreateMilestoneBody:
+      type: object
+      properties:
+        title:
+          type: string
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+      required:
+        - title
+
+    UpdateMilestoneBody:
+      type: object
+      properties:
+        title:
+          type: string
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        done:
+          type: boolean
         position:
           type: integer
 

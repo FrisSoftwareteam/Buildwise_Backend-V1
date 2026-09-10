@@ -27,6 +27,7 @@ function computeUserMetrics(user: LeanUser, tasks: Task[], today: string, cutoff
   const completed = assigned.filter((t) => t.status === "done");
   const active = assigned.filter((t) => t.status !== "done");
   const wip = assigned.filter((t) => t.status === "in_progress" || t.status === "in_review");
+  const inProgress = assigned.filter((t) => t.status === "in_progress");
   const overdue = active.filter((t) => isOverdue(t, today));
 
   const completedWithDueDate = completed.filter((t) => t.dueDate);
@@ -64,6 +65,7 @@ function computeUserMetrics(user: LeanUser, tasks: Task[], today: string, cutoff
     completedLast30d: completedLast30d.length,
     active: active.length,
     wip: wip.length,
+    inProgress: inProgress.length,
     overdue: overdue.length,
     onTimeRate,
     storyPointsDelivered,
@@ -126,7 +128,13 @@ router.get("/kpis", async (req, res) => {
     );
     const leaderboard = relevantUsers
       .map((u) => computeUserMetrics(u, tasks, today, cutoff30))
-      .sort((a, b) => b.completed - a.completed || b.storyPointsDelivered - a.storyPointsDelivered);
+      .sort((a, b) => {
+        // Rank by completed + in-progress work combined, so active work in
+        // flight counts toward standing and not only fully finished tasks.
+        const scoreA = a.completed + a.inProgress;
+        const scoreB = b.completed + b.inProgress;
+        return scoreB - scoreA || b.completed - a.completed || b.storyPointsDelivered - a.storyPointsDelivered;
+      });
 
     let personal: ReturnType<typeof computeUserMetrics> | null = null;
     const userIdParam = req.query.userId;

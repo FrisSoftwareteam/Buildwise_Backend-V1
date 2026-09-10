@@ -74,6 +74,17 @@ export interface Task {
   updatedAt: Date;
 }
 
+export interface Milestone {
+  id: number;
+  projectId: number;
+  title: string;
+  dueDate?: string | null;
+  done: boolean;
+  position: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Sprint {
   id: number;
   projectId: number;
@@ -346,6 +357,7 @@ type CounterName =
   | "users"
   | "projects"
   | "tasks"
+  | "milestones"
   | "sprints"
   | "comments"
   | "vendors"
@@ -424,6 +436,7 @@ async function getDb() {
 
 async function ensureIndexes(db: Db) {
   await db.collection<User>("users").createIndex({ email: 1 }, { unique: true });
+  await db.collection<Milestone>("milestones").createIndex({ projectId: 1 });
 }
 
 async function nextSequence(name: CounterName, dbOverride?: Db) {
@@ -2196,6 +2209,75 @@ export async function listOverdueOpenTasks() {
 export async function deleteTask(id: number) {
   const db = await getDb();
   const result = await db.collection<Task>("tasks").deleteOne({ id });
+  return result.deletedCount > 0;
+}
+
+async function recomputeProjectCompletion(projectId: number, dbOverride?: Db) {
+  const db = dbOverride ?? await getDb();
+  const milestones = await db.collection<Milestone>("milestones").find({ projectId }).toArray();
+  if (milestones.length === 0) return;
+  const done = milestones.filter((milestone) => milestone.done).length;
+  const rate = Math.round((done / milestones.length) * 100);
+  await db.collection<Project>("projects").updateOne(
+    { id: projectId },
+    { $set: { completionRate: String(rate), updatedAt: new Date() } },
+  );
+}
+
+export async function listMilestonesByProject(projectId: number) {
+  const db = await getDb();
+  const milestones = await db
+    .collection<Milestone>("milestones")
+    .find({ projectId })
+    .sort({ position: 1 })
+    .toArray();
+  return stripMongoIds(milestones);
+}
+
+export async function getMilestoneById(id: number) {
+  const db = await getDb();
+  const milestone = await db.collection<Milestone>("milestones").findOne({ id });
+  return stripMongoId(milestone);
+}
+
+export async function createMilestone(
+  milestone: Omit<Milestone, "id" | "createdAt" | "updatedAt"> &
+    Partial<Pick<Milestone, "createdAt" | "updatedAt">>,
+) {
+  const db = await getDb();
+  const nextId = await nextSequence("milestones");
+  const now = new Date();
+  const doc: Milestone = {
+    id: nextId,
+    createdAt: milestone.createdAt ?? now,
+    updatedAt: milestone.updatedAt ?? now,
+    ...milestone,
+  };
+  await db.collection<Milestone>("milestones").insertOne(doc);
+  await recomputeProjectCompletion(doc.projectId, db);
+  return doc;
+}
+
+export async function updateMilestone(
+  id: number,
+  updates: Partial<Omit<Milestone, "id" | "projectId" | "createdAt">>,
+) {
+  const db = await getDb();
+  const set = removeUndefined({
+    ...updates,
+    updatedAt: new Date(),
+  });
+  await db.collection<Milestone>("milestones").updateOne({ id }, { $set: set });
+  const updated = await getMilestoneById(id);
+  if (updated) await recomputeProjectCompletion(updated.projectId, db);
+  return updated;
+}
+
+export async function deleteMilestone(id: number) {
+  const db = await getDb();
+  const existing = await db.collection<Milestone>("milestones").findOne({ id });
+  const result = await db.collection<Milestone>("milestones").deleteOne({ id });
+  if (existing) await recomputeProjectCompletion(existing.projectId, db);
   return result.deletedCount > 0;
 }
 
