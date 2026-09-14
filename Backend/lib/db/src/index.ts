@@ -28,6 +28,7 @@ export interface Project {
   initialCost?: string | null;
   monthlyCost?: string | null;
   completionRate: string;
+  milestoneCount?: number;
   ownerId?: number | null;
   vendorId?: number | null;
   contributors?: ProjectContributor[];
@@ -387,6 +388,7 @@ const PASSWORD_KEYLEN = 64;
 let client: MongoClient | null = null;
 let dbPromise: Promise<Db> | null = null;
 let seedPromise: Promise<void> | null = null;
+let milestoneCountMigrationPromise: Promise<void> | null = null;
 
 function getMongoClient() {
   const mongoUri = process.env.MONGODB_URI;
@@ -426,6 +428,8 @@ async function getDb() {
     await ensureIndexes(db);
     seedPromise ??= ensureSeedData(db);
     await seedPromise;
+    milestoneCountMigrationPromise ??= ensureMilestoneCounts(db);
+    await milestoneCountMigrationPromise;
     return db;
   } catch (error) {
     dbPromise = null;
@@ -437,6 +441,20 @@ async function getDb() {
 async function ensureIndexes(db: Db) {
   await db.collection<User>("users").createIndex({ email: 1 }, { unique: true });
   await db.collection<Milestone>("milestones").createIndex({ projectId: 1 });
+}
+
+// One-time backfill: projects created before the milestoneCount field existed
+// don't have it set. Populate it from the actual milestones collection so the
+// UI can tell "no milestones yet" apart from "0% complete".
+async function ensureMilestoneCounts(db: Db) {
+  const projectsCollection = db.collection<Project>("projects");
+  const projectsMissingCount = await projectsCollection
+    .find({ milestoneCount: { $exists: false } })
+    .toArray();
+  for (const project of projectsMissingCount) {
+    const count = await db.collection<Milestone>("milestones").countDocuments({ projectId: project.id });
+    await projectsCollection.updateOne({ id: project.id }, { $set: { milestoneCount: count } });
+  }
 }
 
 async function nextSequence(name: CounterName, dbOverride?: Db) {
@@ -2078,6 +2096,7 @@ export async function createProject(
     updatedAt: project.updatedAt ?? now,
     ...project,
     documents: project.documents ?? [],
+    milestoneCount: project.milestoneCount ?? 0,
   };
   await db.collection<Project>("projects").insertOne(doc);
   return doc;
@@ -2215,12 +2234,18 @@ export async function deleteTask(id: number) {
 async function recomputeProjectCompletion(projectId: number, dbOverride?: Db) {
   const db = dbOverride ?? await getDb();
   const milestones = await db.collection<Milestone>("milestones").find({ projectId }).toArray();
-  if (milestones.length === 0) return;
+  if (milestones.length === 0) {
+    await db.collection<Project>("projects").updateOne(
+      { id: projectId },
+      { $set: { milestoneCount: 0, updatedAt: new Date() } },
+    );
+    return;
+  }
   const done = milestones.filter((milestone) => milestone.done).length;
   const rate = Math.round((done / milestones.length) * 100);
   await db.collection<Project>("projects").updateOne(
     { id: projectId },
-    { $set: { completionRate: String(rate), updatedAt: new Date() } },
+    { $set: { completionRate: String(rate), milestoneCount: milestones.length, updatedAt: new Date() } },
   );
 }
 
