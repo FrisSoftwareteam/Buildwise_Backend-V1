@@ -2518,6 +2518,13 @@ export async function updateVendor(
 
 export async function deleteVendor(id: number) {
   const db = await getDb();
+  await db.collection<VendorProject>("vendorProjects").deleteMany({ vendorId: id });
+  await db.collection<VendorInvite>("vendorInvites").deleteMany({ vendorId: id });
+  await db.collection<Project>("projects").updateMany(
+    { vendorId: id },
+    { $set: { vendorId: null, updatedAt: new Date() } },
+  );
+  await db.collection<User>("users").updateMany({ vendorId: id }, { $set: { vendorId: null } });
   const result = await db.collection<Vendor>("vendors").deleteOne({ id });
   return result.deletedCount > 0;
 }

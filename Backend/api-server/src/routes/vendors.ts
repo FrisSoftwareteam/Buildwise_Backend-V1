@@ -11,6 +11,7 @@ import {
   updateVendorProject,
 } from "@workspace/db";
 import { getActingUser, isVendorUser } from "../lib/acting-user";
+import { isSuperAdminEmail } from "../lib/super-admin";
 
 const router: IRouter = Router();
 
@@ -73,7 +74,13 @@ router.put("/vendors/:id", async (req, res) => {
 
 router.delete("/vendors/:id", async (req, res) => {
   try {
+    const user = await getActingUser(req);
+    if (!isSuperAdminEmail(user?.email)) {
+      return res.status(403).json({ error: "Only Super admin can delete vendors." });
+    }
     const id = parseInt(req.params.id);
+    const existing = await getVendorById(id);
+    if (!existing) return res.status(404).json({ error: "Vendor not found" });
     await deleteVendor(id);
     res.status(204).send();
   } catch (e) {
