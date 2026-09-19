@@ -5,15 +5,22 @@ import {
   listAllVendors,
   listProjects,
 } from "@workspace/db";
+import { getActingUser } from "../lib/acting-user";
+import { filterProjectsForUser } from "../lib/vendor-access";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/stats", async (_req, res) => {
+router.get("/dashboard/stats", async (req, res) => {
   try {
-    const projects = await listProjects();
-    const tasks = await listAllTasks();
+    const user = await getActingUser(req);
+    const allProjects = await listProjects();
+    const projects = await filterProjectsForUser(user, allProjects);
+    const assignedIds = new Set(projects.map((project) => project.id));
+    const tasks = (await listAllTasks()).filter((task) => assignedIds.has(task.projectId) || assignedIds.size === allProjects.length);
     const vendors = await listAllVendors();
-    const vendorProjects = await listAllVendorProjects();
+    const vendorProjects = (await listAllVendorProjects()).filter((row) =>
+      !user || user.role !== "vendor" || (user.vendorId && row.vendorId === user.vendorId),
+    );
 
     const totalProjects = projects.length;
     const activeProjects = projects.filter(p => p.status === "in_progress").length;

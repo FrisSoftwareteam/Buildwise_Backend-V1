@@ -10,6 +10,7 @@ import {
   updateVendor,
   updateVendorProject,
 } from "@workspace/db";
+import { getActingUser, isVendorUser } from "../lib/acting-user";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,13 @@ router.get("/vendors", async (req, res) => {
     const vendors = await listVendors({
       status: typeof status === "string" ? status : undefined,
     });
+    const user = await getActingUser(req);
+    if (isVendorUser(user) && user?.vendorId) {
+      return res.json(vendors.filter((vendor) => vendor.id === user.vendorId));
+    }
+    if (isVendorUser(user)) {
+      return res.json([]);
+    }
     res.json(vendors);
   } catch (e) {
     res.status(500).json({ error: "Failed to fetch vendors" });
@@ -28,9 +36,9 @@ router.get("/vendors", async (req, res) => {
 
 router.post("/vendors", async (req, res) => {
   try {
-    const { name, contactName, contactEmail, contactPhone, country, status, specialization, registrationNumber } = req.body;
+    const { name, contactName, contactEmail, contactEmail2, contactPhone, country, status, specialization, registrationNumber } = req.body;
     const vendor = await createVendor({
-      name, contactName, contactEmail, contactPhone, country, status: status || "pending", specialization, registrationNumber
+      name, contactName, contactEmail, contactEmail2, contactPhone, country, status: status || "pending", specialization, registrationNumber
     });
     res.status(201).json(vendor);
   } catch (e) {
@@ -52,9 +60,9 @@ router.get("/vendors/:id", async (req, res) => {
 router.put("/vendors/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, contactName, contactEmail, contactPhone, country, status, specialization, registrationNumber } = req.body;
+    const { name, contactName, contactEmail, contactEmail2, contactPhone, country, status, specialization, registrationNumber } = req.body;
     const vendor = await updateVendor(id, {
-      name, contactName, contactEmail, contactPhone, country, status, specialization, registrationNumber
+      name, contactName, contactEmail, contactEmail2, contactPhone, country, status, specialization, registrationNumber
     });
     if (!vendor) return res.status(404).json({ error: "Vendor not found" });
     res.json(vendor);
@@ -77,8 +85,12 @@ router.delete("/vendors/:id", async (req, res) => {
 router.get("/vendor-projects", async (req, res) => {
   try {
     const { vendorId, stage } = req.query;
+    const user = await getActingUser(req);
+    const scopedVendorId = isVendorUser(user) && user?.vendorId
+      ? user.vendorId
+      : typeof vendorId === "string" ? parseInt(vendorId) : undefined;
     const vps = await listVendorProjects({
-      vendorId: typeof vendorId === "string" ? parseInt(vendorId) : undefined,
+      vendorId: scopedVendorId,
       stage: typeof stage === "string" ? stage : undefined,
     });
     res.json(vps);

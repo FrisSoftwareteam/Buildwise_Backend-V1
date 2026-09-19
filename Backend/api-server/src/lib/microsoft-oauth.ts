@@ -4,6 +4,7 @@ import type { Request } from "express";
 type PendingState = {
   redirectTo: string;
   createdAt: number;
+  inviteToken?: string;
 };
 
 const pendingStates = new Map<string, PendingState>();
@@ -79,10 +80,14 @@ export function resolveFrontendRedirect(redirectTo: unknown) {
   }
 }
 
-export function createOAuthState(redirectTo: string) {
+export function createOAuthState(redirectTo: string, extra?: { inviteToken?: string }) {
   pruneStates();
   const state = randomBytes(24).toString("hex");
-  pendingStates.set(state, { redirectTo, createdAt: Date.now() });
+  pendingStates.set(state, {
+    redirectTo,
+    createdAt: Date.now(),
+    inviteToken: extra?.inviteToken,
+  });
   return state;
 }
 

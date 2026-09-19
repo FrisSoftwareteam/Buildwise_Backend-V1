@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { MongoClient, type Db } from "mongodb";
 
@@ -11,6 +11,7 @@ export interface User {
   roles?: string[] | null;
   department: string;
   avatarUrl?: string | null;
+  vendorId?: number | null;
   createdAt: Date;
 }
 
@@ -82,6 +83,17 @@ export interface Milestone {
   dueDate?: string | null;
   done: boolean;
   position: number;
+  source?: "internal" | "vendor";
+  vendorId?: number | null;
+  workflow?: "draft" | "submitted" | "edit_requested" | "editable" | "review_requested" | "completed";
+  submittedAt?: Date | null;
+  editRequestReason?: string | null;
+  editRequestedAt?: Date | null;
+  reviewRequestedAt?: Date | null;
+  completedAt?: Date | null;
+  completedByEmail?: string | null;
+  overdueAlertSentOn?: string | null;
+  starAwarded?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,12 +123,26 @@ export interface Vendor {
   name: string;
   contactName?: string | null;
   contactEmail?: string | null;
+  contactEmail2?: string | null;
   contactPhone?: string | null;
   country?: string | null;
   status: string;
   specialization?: string | null;
   registrationNumber?: string | null;
+  stars?: number;
   createdAt: Date;
+}
+
+export interface VendorInvite {
+  id: number;
+  tokenHash: string;
+  email: string;
+  vendorId: number;
+  projectIds: number[];
+  invitedBy?: string | null;
+  createdAt: Date;
+  expiresAt: Date;
+  usedAt?: Date | null;
 }
 
 export interface VendorProject {
@@ -363,6 +389,7 @@ type CounterName =
   | "comments"
   | "vendors"
   | "vendorProjects"
+  | "vendorInvites"
   | "agmMeetings"
   | "agmResolutions"
   | "opsAlerts"
@@ -514,6 +541,7 @@ async function ensureSeedData(db: Db) {
     await ensureTaskTimelines(db);
     await ensureVendorUser(db);
     await ensureProjectManagerUser(db);
+    await ensureSuperAdminUser(db);
     return;
   }
 
@@ -555,10 +583,10 @@ async function ensureSeedData(db: Db) {
     {
       id: 4,
       name: "Ifeanyi Ayodeji",
-      email: "ifeanyiayodeji@firstregistrarsnigeria.com",
+      email: "ifeanyi.ayodeji@firstregistrarsnigeria.com",
       password: sharedSeedPassword,
-      role: "developer",
-      department: "Software",
+      role: "admin",
+      department: "Executive",
       avatarUrl: null,
       createdAt: now,
     },
@@ -942,6 +970,7 @@ async function ensureSeedData(db: Db) {
   await ensureTaskTimelines(db);
   await ensureVendorUser(db);
   await ensureProjectManagerUser(db);
+  await ensureSuperAdminUser(db);
 }
 
 async function ensureVendorUser(db: Db) {
@@ -983,6 +1012,40 @@ async function ensureProjectManagerUser(db: Db) {
     password: await hashPassword("Admin@123"),
     role: "manager",
     department: "Project Management Office",
+    avatarUrl: null,
+    createdAt: now,
+  });
+}
+
+async function ensureSuperAdminUser(db: Db) {
+  const usersCollection = db.collection<User>("users");
+  const email = "ifeanyi.ayodeji@firstregistrarsnigeria.com";
+  const existing = await usersCollection.findOne({
+    email: { $in: [email, "ifeanyiayodeji@firstregistrarsnigeria.com"] },
+  });
+  if (existing) {
+    await usersCollection.updateOne(
+      { id: existing.id },
+      {
+        $set: {
+          email,
+          role: "admin",
+          department: existing.department || "Executive",
+        },
+      },
+    );
+    return;
+  }
+
+  const now = new Date();
+  const id = await nextSequence("users", db);
+  await usersCollection.insertOne({
+    id,
+    name: "Ifeanyi Ayodeji",
+    email,
+    password: await hashPassword("password123"),
+    role: "admin",
+    department: "Executive",
     avatarUrl: null,
     createdAt: now,
   });
@@ -1956,6 +2019,12 @@ export async function listUsers() {
   return stripMongoIds(users);
 }
 
+export async function listUsersByVendorId(vendorId: number) {
+  const db = await getDb();
+  const users = await db.collection<User>("users").find({ vendorId }).sort({ name: 1 }).toArray();
+  return stripMongoIds(users);
+}
+
 export async function getUserById(id: number) {
   const db = await getDb();
   const user = await db.collection<User>("users").findOne({ id });
@@ -2063,11 +2132,13 @@ export async function deleteUser(id: number) {
 export async function listProjects(filters?: {
   type?: string;
   status?: string;
+  vendorId?: number;
 }) {
   const db = await getDb();
   const query = removeUndefined({
     type: filters?.type,
     status: filters?.status,
+    vendorId: filters?.vendorId,
   });
   const projects = await db
     .collection<Project>("projects")
@@ -2249,6 +2320,24 @@ async function recomputeProjectCompletion(projectId: number, dbOverride?: Db) {
   );
 }
 
+export async function listOverdueVendorMilestones() {
+  const db = await getDb();
+  const today = dateStamp();
+  const milestones = await db.collection<Milestone>("milestones").find({
+    source: "vendor",
+    workflow: { $nin: ["completed", "draft"] },
+    done: { $ne: true },
+    dueDate: { $type: "string", $lt: today },
+  }).sort({ dueDate: 1, id: 1 }).toArray();
+  return stripMongoIds(milestones);
+}
+
+export async function addVendorStar(vendorId: number) {
+  const vendor = await getVendorById(vendorId);
+  if (!vendor) return null;
+  return updateVendor(vendorId, { stars: (vendor.stars || 0) + 1 });
+}
+
 export async function listMilestonesByProject(projectId: number) {
   const db = await getDb();
   const milestones = await db
@@ -2408,6 +2497,7 @@ export async function createVendor(
     id: nextId,
     createdAt: vendor.createdAt ?? new Date(),
     ...vendor,
+    stars: vendor.stars ?? 0,
   };
   await db.collection<Vendor>("vendors").insertOne(doc);
   return doc;
@@ -2430,6 +2520,62 @@ export async function deleteVendor(id: number) {
   const db = await getDb();
   const result = await db.collection<Vendor>("vendors").deleteOne({ id });
   return result.deletedCount > 0;
+}
+
+function hashInviteToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function getVendorByEmail(email: string) {
+  const db = await getDb();
+  const normalized = email.toLowerCase().trim();
+  const vendor = await db.collection<Vendor>("vendors").findOne({
+    $or: [{ contactEmail: normalized }, { contactEmail2: normalized }],
+  });
+  return stripMongoId(vendor);
+}
+
+export async function createVendorInvite(input: {
+  email: string;
+  vendorId: number;
+  projectIds: number[];
+  invitedBy?: string | null;
+  ttlMs?: number;
+}) {
+  const db = await getDb();
+  const token = randomBytes(32).toString("hex");
+  const now = new Date();
+  const doc: VendorInvite = {
+    id: await nextSequence("vendorInvites"),
+    tokenHash: hashInviteToken(token),
+    email: input.email.toLowerCase().trim(),
+    vendorId: input.vendorId,
+    projectIds: input.projectIds,
+    invitedBy: input.invitedBy ?? null,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + (input.ttlMs ?? 14 * 24 * 60 * 60 * 1000)),
+    usedAt: null,
+  };
+  await db.collection<VendorInvite>("vendorInvites").insertOne(doc);
+  return { invite: doc, token };
+}
+
+export async function getVendorInviteByToken(token: string) {
+  const db = await getDb();
+  const invite = await db.collection<VendorInvite>("vendorInvites").findOne({
+    tokenHash: hashInviteToken(token),
+  });
+  return stripMongoId(invite);
+}
+
+export async function markVendorInviteUsed(id: number) {
+  const db = await getDb();
+  await db.collection<VendorInvite>("vendorInvites").updateOne(
+    { id },
+    { $set: { usedAt: new Date() } },
+  );
+  const invite = await db.collection<VendorInvite>("vendorInvites").findOne({ id });
+  return stripMongoId(invite);
 }
 
 export async function listVendorProjects(filters?: {

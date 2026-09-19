@@ -3,10 +3,12 @@ import { logger } from "./logger";
 
 function createTransport() {
   if (process.env.SMTP_HOST) {
+    const secure = process.env.SMTP_SECURE === "true";
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === "true",
+      secure,
+      requireTLS: !secure,
       auth: process.env.SMTP_USER
         ? {
             user: process.env.SMTP_USER,
@@ -23,6 +25,7 @@ const transporter = createTransport();
 
 export async function sendMail(options: {
   to: string[];
+  cc?: string[];
   subject: string;
   text: string;
   html?: string;
@@ -33,9 +36,12 @@ export async function sendMail(options: {
     return { accepted: [] as string[], preview: null as string | null };
   }
 
+  const cc = [...new Set((options.cc || []).map((email) => email.trim().toLowerCase()).filter((email) => email && !recipients.includes(email)))];
+
   const info = await transporter.sendMail({
     from: process.env.MAIL_FROM || "BuildWise <noreply@buildwise.local>",
     to: recipients.join(", "),
+    cc: cc.length ? cc.join(", ") : undefined,
     subject: options.subject,
     text: options.text,
     html: options.html || options.text.replace(/\n/g, "<br>"),
@@ -51,11 +57,12 @@ export async function sendMail(options: {
   logger.info(
     {
       to: recipients,
+      cc,
       subject: options.subject,
       messageId: info.messageId,
       smtpConfigured: Boolean(process.env.SMTP_HOST),
     },
-    preview ? "Task reminder mail logged (SMTP not configured)" : "Task reminder mail sent",
+    preview ? "Mail logged (SMTP not configured)" : "Mail sent",
   );
 
   if (preview) {

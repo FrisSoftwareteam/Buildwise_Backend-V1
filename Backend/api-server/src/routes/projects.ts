@@ -22,6 +22,8 @@ import {
   readProjectDocumentText,
   saveProjectDocumentFile,
 } from "../lib/project-documents";
+import { getActingUser, isVendorUser } from "../lib/acting-user";
+import { filterProjectsForUser, rejectIfNoProjectAccess } from "../lib/vendor-access";
 
 const router: IRouter = Router();
 
@@ -52,7 +54,8 @@ router.get("/projects", async (req, res) => {
       type: typeof type === "string" ? type : undefined,
       status: typeof status === "string" ? status : undefined,
     });
-    res.json(projects);
+    const user = await getActingUser(req);
+    res.json(await filterProjectsForUser(user, projects));
   } catch (e) {
     res.status(500).json({ error: "Failed to fetch projects" });
   }
@@ -60,6 +63,10 @@ router.get("/projects", async (req, res) => {
 
 router.post("/projects", async (req, res) => {
   try {
+    const user = await getActingUser(req);
+    if (isVendorUser(user)) {
+      return res.status(403).json({ error: "Vendors cannot create products." });
+    }
     const { name, description, type, status, priority, country, startDate, endDate, budget, initialCost, monthlyCost, ownerId, vendorId, contributors } = req.body;
     const setupCost = moneyString(initialCost ?? budget);
     const project = await createProject({
@@ -79,6 +86,7 @@ router.post("/projects", async (req, res) => {
 router.get("/projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const project = await getProjectById(id);
     if (!project) return res.status(404).json({ error: "Project not found" });
     res.json(project);
@@ -90,6 +98,7 @@ router.get("/projects/:id", async (req, res) => {
 router.put("/projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const { name, description, type, status, priority, country, startDate, endDate, budget, initialCost, monthlyCost, completionRate, ownerId, vendorId, contributors } = req.body;
     const setupCost = moneyString(initialCost ?? budget);
     const project = await updateProject(id, {
@@ -111,6 +120,7 @@ router.put("/projects/:id", async (req, res) => {
 router.delete("/projects/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     await deleteAllProjectDocumentFiles(id);
     await deleteProject(id);
     res.status(204).send();
@@ -122,6 +132,7 @@ router.delete("/projects/:id", async (req, res) => {
 router.post("/projects/:id/documents/:kind", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const kind = req.params.kind;
     if (!isProjectDocumentKind(kind)) {
       return res.status(400).json({ error: "Unknown document type" });
@@ -156,6 +167,7 @@ router.post("/projects/:id/documents/:kind", async (req, res) => {
 router.get("/projects/:id/documents/:kind", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const kind = req.params.kind;
     if (!isProjectDocumentKind(kind)) {
       return res.status(400).json({ error: "Unknown document type" });
@@ -173,6 +185,7 @@ router.get("/projects/:id/documents/:kind", async (req, res) => {
 router.get("/projects/:id/documents/:kind/text", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const kind = req.params.kind;
     if (!isProjectDocumentKind(kind)) {
       return res.status(400).json({ error: "Unknown document type" });
@@ -191,6 +204,7 @@ router.get("/projects/:id/documents/:kind/text", async (req, res) => {
 router.delete("/projects/:id/documents/:kind", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    if (await rejectIfNoProjectAccess(req, res, id)) return;
     const kind = req.params.kind;
     if (!isProjectDocumentKind(kind)) {
       return res.status(400).json({ error: "Unknown document type" });
@@ -210,6 +224,7 @@ router.delete("/projects/:id/documents/:kind", async (req, res) => {
 router.get("/projects/:projectId/tasks", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const { sprintId, status, assigneeId } = req.query;
     const tasks = await listTasksByProject(projectId, {
       sprintId: typeof sprintId === "string" ? parseInt(sprintId) : undefined,
@@ -225,6 +240,7 @@ router.get("/projects/:projectId/tasks", async (req, res) => {
 router.post("/projects/:projectId/tasks", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const { sprintId, title, description, status, priority, type, assigneeId, reporterId, storyPoints, dueDate, label } = req.body;
     if (!dueDate) {
       return res.status(400).json({ error: "Every task needs a timeline date" });
@@ -246,6 +262,7 @@ router.post("/projects/:projectId/tasks", async (req, res) => {
 router.get("/projects/:projectId/milestones", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const milestones = await listMilestonesByProject(projectId);
     res.json(milestones);
   } catch (e) {
@@ -256,18 +273,27 @@ router.get("/projects/:projectId/milestones", async (req, res) => {
 router.post("/projects/:projectId/milestones", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const { title, dueDate } = req.body;
     if (!title || !String(title).trim()) {
       return res.status(400).json({ error: "Every milestone needs a title" });
     }
     const existing = await listMilestonesByProject(projectId);
     const position = existing.length;
+    const user = await getActingUser(req);
+    const vendorOwned = isVendorUser(user);
+    if (vendorOwned && !dueDate) {
+      return res.status(400).json({ error: "Every vendor sub-milestone needs a date" });
+    }
     const milestone = await createMilestone({
       projectId,
       title: String(title).trim(),
       dueDate: dueDate || null,
       done: false,
       position,
+      source: vendorOwned ? "vendor" : "internal",
+      vendorId: vendorOwned ? user?.vendorId || null : null,
+      workflow: vendorOwned ? "draft" : "submitted",
     });
     res.status(201).json(milestone);
   } catch (e) {
@@ -279,6 +305,7 @@ router.post("/projects/:projectId/milestones", async (req, res) => {
 router.get("/projects/:projectId/sprints", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const sprints = await listSprintsByProject(projectId);
     res.json(sprints);
   } catch (e) {
@@ -289,6 +316,7 @@ router.get("/projects/:projectId/sprints", async (req, res) => {
 router.post("/projects/:projectId/sprints", async (req, res) => {
   try {
     const projectId = parseInt(req.params.projectId);
+    if (await rejectIfNoProjectAccess(req, res, projectId)) return;
     const { name, goal, status, startDate, endDate } = req.body;
     const sprint = await createSprint({
       projectId, name, goal, status: status || "planned", startDate, endDate

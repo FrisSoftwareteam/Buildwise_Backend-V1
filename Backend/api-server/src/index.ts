@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startTaskTimelineReminders } from "./lib/task-reminders";
+import { startVendorMilestoneOverdueAlerts } from "./lib/milestone-overdue";
 
 export default app;
 
@@ -22,5 +23,6 @@ if (!process.env.VERCEL) {
   app.listen(port, () => {
     logger.info({ port }, "Server listening");
     startTaskTimelineReminders();
+    startVendorMilestoneOverdueAlerts();
   });
 }

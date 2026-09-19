@@ -8,6 +8,7 @@ import {
   updateSprint,
   updateTask,
 } from "@workspace/db";
+import { rejectIfNoProjectAccess } from "../lib/vendor-access";
 
 const router: IRouter = Router();
 
@@ -17,6 +18,7 @@ router.get("/tasks/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const task = await getTaskById(id);
     if (!task) return res.status(404).json({ error: "Task not found" });
+    if (await rejectIfNoProjectAccess(req, res, task.projectId)) return;
     res.json(task);
   } catch (e) {
     res.status(500).json({ error: "Failed to fetch task" });
@@ -26,6 +28,9 @@ router.get("/tasks/:id", async (req, res) => {
 router.put("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const existing = await getTaskById(id);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+    if (await rejectIfNoProjectAccess(req, res, existing.projectId)) return;
     const { sprintId, title, description, status, priority, type, assigneeId, reporterId, storyPoints, dueDate, label, position } = req.body;
     const task = await updateTask(id, {
       sprintId, title, description, status, priority, type,
@@ -42,6 +47,9 @@ router.put("/tasks/:id", async (req, res) => {
 router.delete("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const existing = await getTaskById(id);
+    if (!existing) return res.status(404).json({ error: "Task not found" });
+    if (await rejectIfNoProjectAccess(req, res, existing.projectId)) return;
     await deleteTask(id);
     res.status(204).send();
   } catch (e) {
@@ -76,6 +84,9 @@ router.delete("/sprints/:id", async (req, res) => {
 router.get("/tasks/:taskId/comments", async (req, res) => {
   try {
     const taskId = parseInt(req.params.taskId);
+    const task = await getTaskById(taskId);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (await rejectIfNoProjectAccess(req, res, task.projectId)) return;
     const comments = await listCommentsByTask(taskId);
     res.json(comments);
   } catch (e) {
@@ -86,6 +97,9 @@ router.get("/tasks/:taskId/comments", async (req, res) => {
 router.post("/tasks/:taskId/comments", async (req, res) => {
   try {
     const taskId = parseInt(req.params.taskId);
+    const task = await getTaskById(taskId);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (await rejectIfNoProjectAccess(req, res, task.projectId)) return;
     const { authorId, content } = req.body;
     const comment = await createComment({ taskId, authorId, content });
     res.status(201).json(comment);
