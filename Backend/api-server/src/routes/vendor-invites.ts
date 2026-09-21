@@ -24,9 +24,63 @@ const router: IRouter = Router();
 
 function publicWebUrl() {
   return (
-    process.env.PUBLIC_WEB_URL?.replace(/\/$/, "") ||
+    process.env.PUBLIC_WEB_URL?.trim().replace(/\/$/, "") ||
     `http://127.0.0.1:${process.env.WEB_PORT || 3000}`
   );
+}
+
+function isLocalWebUrl(url: string) {
+  try {
+    const host = new URL(url).hostname;
+    return host === "localhost" || host === "127.0.0.1";
+  } catch {
+    return true;
+  }
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function vendorInviteEmail(input: {
+  greeting: string;
+  productNames: string;
+  link: string;
+}) {
+  const text = [
+    `Hello ${input.greeting},`,
+    "",
+    "You have been invited to BuildWise as an external software vendor.",
+    `Assigned software products: ${input.productNames}.`,
+    "",
+    "Up to two people from your company can sign in to this same vendor account.",
+    "You will share the assigned products, milestones, and stars.",
+    "",
+    "Open this invitation in your browser (do not paste it into Google):",
+    `<${input.link}>`,
+    "",
+    "Then choose Continue with Google, using the Google account this invitation was sent to.",
+    "",
+    "— First Registrars PMO",
+  ].join("\n");
+
+  const html = [
+    `<p>Hello ${escapeHtml(input.greeting)},</p>`,
+    "<p>You have been invited to BuildWise as an external software vendor.</p>",
+    `<p>Assigned software products: ${escapeHtml(input.productNames)}.</p>`,
+    "<p>Up to two people from your company can sign in to this same vendor account. You will share the assigned products, milestones, and stars.</p>",
+    `<p><a href="${escapeHtml(input.link)}" style="display:inline-block;background:#c4a747;color:#0f1c2e;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Sign in to BuildWise</a></p>`,
+    `<p>If the button does not work, copy this full address into your browser address bar. Do not paste it into Google search:</p>`,
+    `<p><a href="${escapeHtml(input.link)}">${escapeHtml(input.link)}</a></p>`,
+    "<p>Use the Google account this invitation was sent to.</p>",
+    "<p>— First Registrars PMO</p>",
+  ].join("");
+
+  return { text, html };
 }
 
 router.post("/vendor-invites", async (req, res) => {
@@ -118,8 +172,16 @@ router.post("/vendor-invites", async (req, res) => {
 
     const productNames = projects.map((project) => project.name).join(", ");
     const invitedBy = typeof req.body?.invitedBy === "string" ? req.body.invitedBy : null;
+    const webBase = publicWebUrl();
+    const linkWarning = isLocalWebUrl(webBase)
+      ? "PUBLIC_WEB_URL is not set to your live BuildWise site, so this invite link will not work for vendors."
+      : undefined;
     const invites: Array<{ email: string; link: string }> = [];
     const mailErrors: string[] = [];
+
+    if (linkWarning) {
+      logger.error({ webBase }, "Vendor invite used a localhost web URL");
+    }
 
     for (const email of emails) {
       const { token } = await createVendorInvite({
@@ -128,25 +190,14 @@ router.post("/vendor-invites", async (req, res) => {
         projectIds,
         invitedBy,
       });
-      const link = `${publicWebUrl()}/login?invite=${encodeURIComponent(token)}`;
+      const link = `${webBase}/login?invite=${encodeURIComponent(token)}`;
       invites.push({ email, link });
       const cc = pmoInviteCc(email);
-      const text = [
-        `Hello ${contactName || name},`,
-        "",
-        "You have been invited to BuildWise as an external software vendor.",
-        `Assigned software products: ${productNames}.`,
-        "",
-        "Up to two people from your company can sign in to this same vendor account.",
-        "You will share the assigned products, milestones, and stars.",
-        "",
-        "Sign in with Google using this invitation link:",
+      const { text, html } = vendorInviteEmail({
+        greeting: contactName || name,
+        productNames,
         link,
-        "",
-        "Use the Google account this invitation was sent to.",
-        "",
-        "— First Registrars PMO",
-      ].join("\n");
+      });
 
       try {
         await sendMail({
@@ -154,6 +205,7 @@ router.post("/vendor-invites", async (req, res) => {
           cc,
           subject: "You're invited to BuildWise",
           text,
+          html,
         });
       } catch (e) {
         logger.error({ err: e, email }, "Vendor invite email failed");
@@ -169,6 +221,7 @@ router.post("/vendor-invites", async (req, res) => {
       cc: pmoInviteCc(),
       projectIds,
       mailError: mailErrors[0],
+      linkWarning,
     });
   } catch (e) {
     logger.error({ err: e }, "Vendor invite failed");
