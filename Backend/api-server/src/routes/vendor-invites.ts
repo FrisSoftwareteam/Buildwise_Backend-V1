@@ -11,7 +11,7 @@ import {
   updateVendor,
 } from "@workspace/db";
 import { logger } from "../lib/logger";
-import { sendMail } from "../lib/mailer";
+import { sendMail, friendlyMailError } from "../lib/mailer";
 import { pmoInviteCc } from "../lib/pmo-invite-cc";
 import {
   mergeVendorEmails,
@@ -209,7 +209,7 @@ router.post("/vendor-invites", async (req, res) => {
         });
       } catch (e) {
         logger.error({ err: e, email }, "Vendor invite email failed");
-        mailErrors.push(e instanceof Error ? e.message : "Could not send email");
+        mailErrors.push(friendlyMailError(e));
       }
     }
 

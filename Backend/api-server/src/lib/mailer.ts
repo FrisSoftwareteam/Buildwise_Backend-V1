@@ -13,18 +13,33 @@ type MailOptions = {
 // SMTP transport (Microsoft 365 basic auth, or any other SMTP server)
 // ---------------------------------------------------------------------------
 
+function envValue(name: string) {
+  const raw = process.env[name];
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (
+    (trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length >= 2) ||
+    (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2)
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
 function createTransport() {
-  if (process.env.SMTP_HOST) {
-    const secure = process.env.SMTP_SECURE === "true";
+  const host = envValue("SMTP_HOST");
+  if (host) {
+    const secure = envValue("SMTP_SECURE") === "true";
+    const user = envValue("SMTP_USER");
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
+      host,
+      port: Number(envValue("SMTP_PORT") || 587),
       secure,
       requireTLS: !secure,
-      auth: process.env.SMTP_USER
+      auth: user
         ? {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user,
+            pass: envValue("SMTP_PASS"),
           }
         : undefined,
     });
@@ -33,10 +48,8 @@ function createTransport() {
   return nodemailer.createTransport({ jsonTransport: true });
 }
 
-const transporter = createTransport();
-
 function fromAddress() {
-  return process.env.MAIL_FROM || "BuildWise <noreply@buildwise.local>";
+  return envValue("MAIL_FROM") || "BuildWise <noreply@buildwise.local>";
 }
 
 // ---------------------------------------------------------------------------
@@ -57,18 +70,27 @@ function mailTransportMode(): "auto" | "graph" | "smtp" {
   return mode === "graph" || mode === "smtp" ? mode : "auto";
 }
 
+function graphTenantId() {
+  const tenant = envValue("GRAPH_TENANT_ID") || envValue("MICROSOFT_TENANT_ID");
+  const normalized = tenant.toLowerCase();
+  if (!tenant || normalized === "common" || normalized === "organizations" || normalized === "consumers") {
+    return "";
+  }
+  return tenant;
+}
+
 function graphSender(): string | null {
-  const explicit = process.env.GRAPH_MAIL_SENDER?.trim() || process.env.SMTP_USER?.trim();
+  const explicit = envValue("GRAPH_MAIL_SENDER") || envValue("SMTP_USER");
   if (explicit) return explicit;
-  const match = process.env.MAIL_FROM?.match(/<([^>]+)>/);
+  const match = envValue("MAIL_FROM").match(/<([^>]+)>/);
   return match ? match[1].trim() : null;
 }
 
 function graphConfigured() {
   return Boolean(
-    process.env.MICROSOFT_TENANT_ID?.trim() &&
-      process.env.MICROSOFT_CLIENT_ID?.trim() &&
-      process.env.MICROSOFT_CLIENT_SECRET?.trim() &&
+    graphTenantId() &&
+      envValue("MICROSOFT_CLIENT_ID") &&
+      envValue("MICROSOFT_CLIENT_SECRET") &&
       graphSender(),
   );
 }
@@ -80,13 +102,13 @@ async function getGraphToken(): Promise<string> {
     return cachedGraphToken.value;
   }
 
-  const tenant = encodeURIComponent(process.env.MICROSOFT_TENANT_ID!.trim());
+  const tenant = encodeURIComponent(graphTenantId());
   const res = await fetch(`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.MICROSOFT_CLIENT_ID!.trim(),
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET!.trim(),
+      client_id: envValue("MICROSOFT_CLIENT_ID"),
+      client_secret: envValue("MICROSOFT_CLIENT_SECRET"),
       scope: "https://graph.microsoft.com/.default",
       grant_type: "client_credentials",
     }),
@@ -167,7 +189,7 @@ export async function sendMail(options: MailOptions) {
   }
 
   try {
-    const info = await transporter.sendMail({
+    const info = await createTransport().sendMail({
       from: fromAddress(),
       to: recipients.join(", "),
       cc: cc.length ? cc.join(", ") : undefined,
@@ -189,7 +211,7 @@ export async function sendMail(options: MailOptions) {
         cc,
         subject: options.subject,
         messageId: info.messageId,
-        smtpConfigured: Boolean(process.env.SMTP_HOST),
+        smtpConfigured: Boolean(envValue("SMTP_HOST")),
         transport: "smtp",
       },
       preview ? "Mail logged (SMTP not configured)" : "Mail sent",
@@ -208,4 +230,12 @@ export async function sendMail(options: MailOptions) {
     }
     throw smtpErr;
   }
+}
+
+export function friendlyMailError(err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/535|Authentication unsuccessful/i.test(message)) {
+    return "Microsoft 365 rejected SMTP login. Paste SMTP_PASS in Vercel with no quotes, and enable SMTP AUTH for that mailbox. The invite link below still works.";
+  }
+  return message;
 }
