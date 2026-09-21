@@ -27,6 +27,12 @@ export function microsoftTenant() {
   return process.env.MICROSOFT_TENANT_ID?.trim() || "common";
 }
 
+// Interactive sign-in must accept vendor Microsoft accounts from other tenants.
+// Graph mail still uses MICROSOFT_TENANT_ID (the First Registrars directory GUID).
+export function microsoftSignInTenant() {
+  return process.env.MICROSOFT_OAUTH_TENANT?.trim() || "common";
+}
+
 export function microsoftCallbackUrl(req: Request) {
   if (process.env.MICROSOFT_REDIRECT_URI) {
     return process.env.MICROSOFT_REDIRECT_URI;
@@ -106,7 +112,7 @@ export function takeOAuthState(state: string | undefined) {
   return entry;
 }
 
-export function buildAuthorizeUrl(req: Request, state: string) {
+export function buildAuthorizeUrl(req: Request, state: string, extra?: { prompt?: string }) {
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CLIENT_ID ?? "",
     response_type: "code",
@@ -115,7 +121,10 @@ export function buildAuthorizeUrl(req: Request, state: string) {
     scope: "openid profile email User.Read",
     state,
   });
-  return `https://login.microsoftonline.com/${encodeURIComponent(microsoftTenant())}/oauth2/v2.0/authorize?${params.toString()}`;
+  if (extra?.prompt) {
+    params.set("prompt", extra.prompt);
+  }
+  return `https://login.microsoftonline.com/${encodeURIComponent(microsoftSignInTenant())}/oauth2/v2.0/authorize?${params.toString()}`;
 }
 
 export function frontendErrorRedirect(redirectTo: string, message: string) {
@@ -143,7 +152,7 @@ type MicrosoftProfile = {
 
 export async function exchangeCodeForProfile(req: Request, code: string) {
   const tokenRes = await fetch(
-    `https://login.microsoftonline.com/${encodeURIComponent(microsoftTenant())}/oauth2/v2.0/token`,
+    `https://login.microsoftonline.com/${encodeURIComponent(microsoftSignInTenant())}/oauth2/v2.0/token`,
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

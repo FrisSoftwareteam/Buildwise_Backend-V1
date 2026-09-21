@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { createUser, getUserByEmail, getVendorByEmail, getVendorInviteByToken, listUsersByVendorId, markVendorInviteUsed, sanitizeUser, updateUser, verifyUserPassword } from "@workspace/db";
+import { createUser, getUserByEmail, sanitizeUser, updateUser, verifyUserPassword } from "@workspace/db";
 import { logger } from "../lib/logger";
 import {
   buildAuthorizeUrl,
@@ -19,6 +19,7 @@ import {
   isInternalStaffEmail,
 } from "../lib/google-oauth";
 import { isSuperAdminEmail } from "../lib/super-admin";
+import { completeVendorSignIn } from "../lib/vendor-oauth";
 
 const router: IRouter = Router();
 
@@ -40,8 +41,9 @@ router.get("/auth/oauth/microsoft/start", (req, res) => {
     );
   }
 
-  const state = createOAuthState(redirectTo);
-  return res.redirect(buildAuthorizeUrl(req, state));
+  const inviteToken = typeof req.query.invite === "string" ? req.query.invite : undefined;
+  const state = createOAuthState(redirectTo, { inviteToken });
+  return res.redirect(buildAuthorizeUrl(req, state, inviteToken ? { prompt: "select_account" } : undefined));
 });
 
 router.get("/auth/oauth/microsoft/callback", async (req, res) => {
@@ -71,6 +73,20 @@ router.get("/auth/oauth/microsoft/callback", async (req, res) => {
     }
 
     const profile = await exchangeCodeForProfile(req, code);
+    const staffSignIn = isSuperAdminEmail(profile.email) || isInternalStaffEmail(profile.email);
+
+    if (!staffSignIn) {
+      const vendor = await completeVendorSignIn({
+        email: profile.email,
+        name: profile.name,
+        inviteToken: stateRecord.inviteToken,
+      });
+      if (!vendor.ok) {
+        return res.redirect(frontendErrorRedirect(redirectTo, vendor.error));
+      }
+      return res.redirect(frontendSuccessRedirect(redirectTo, sanitizeUser(vendor.user)));
+    }
+
     let user = await getUserByEmail(profile.email);
     const role = isSuperAdminEmail(profile.email) ? "admin" : "developer";
     if (!user) {
@@ -150,90 +166,17 @@ router.get("/auth/oauth/google/callback", async (req, res) => {
       );
     }
 
-    let user = await getUserByEmail(profile.email);
-    const invite = stateRecord.inviteToken
-      ? await getVendorInviteByToken(stateRecord.inviteToken)
-      : null;
-    const vendorByEmail = await getVendorByEmail(profile.email);
-    const vendorId = invite?.vendorId || user?.vendorId || vendorByEmail?.id || null;
-
-    if (invite) {
-      if (invite.usedAt) {
-        return res.redirect(
-          frontendErrorRedirect(redirectTo, "This invitation has already been used."),
-        );
-      }
-      if (invite.expiresAt && new Date(invite.expiresAt).getTime() < Date.now()) {
-        return res.redirect(
-          frontendErrorRedirect(redirectTo, "This invitation has expired. Ask PMO to send a new link."),
-        );
-      }
-      if (invite.email !== profile.email) {
-        return res.redirect(
-          frontendErrorRedirect(
-            redirectTo,
-            `Sign in with ${invite.email}. This invitation is tied to that Google account.`,
-          ),
-        );
-      }
-    } else if (!vendorId) {
-      return res.redirect(
-        frontendErrorRedirect(
-          redirectTo,
-          "Use the invitation link sent by First Registrars PMO to sign in with Google.",
-        ),
-      );
+    const vendor = await completeVendorSignIn({
+      email: profile.email,
+      name: profile.name,
+      avatarUrl: profile.avatarUrl,
+      inviteToken: stateRecord.inviteToken,
+    });
+    if (!vendor.ok) {
+      return res.redirect(frontendErrorRedirect(redirectTo, vendor.error));
     }
 
-    if (vendorId) {
-      const members = await listUsersByVendorId(vendorId);
-      const alreadyOnAccount = members.some((member) => member.email.toLowerCase() === profile.email);
-      if (!alreadyOnAccount && members.length >= 2) {
-        return res.redirect(
-          frontendErrorRedirect(
-            redirectTo,
-            "This vendor account already has two sign-in emails. Ask PMO to replace one of them.",
-          ),
-        );
-      }
-    }
-
-    if (invite || (vendorId && (!user || user.role !== "vendor" || user.vendorId !== vendorId))) {
-      if (!user) {
-        user = await createUser({
-          name: profile.name,
-          email: profile.email,
-          role: "vendor",
-          department: "External Vendor",
-          avatarUrl: profile.avatarUrl,
-          vendorId,
-        });
-      } else {
-        user =
-          (await updateUser(user.id, {
-            name: profile.name || user.name,
-            avatarUrl: profile.avatarUrl || user.avatarUrl,
-            role: "vendor",
-            vendorId,
-          })) ?? user;
-      }
-      if (invite) {
-        await markVendorInviteUsed(invite.id);
-      }
-    } else if (user && profile.name && profile.name !== user.name) {
-      user = (await updateUser(user.id, {
-        name: profile.name,
-        avatarUrl: profile.avatarUrl || user.avatarUrl,
-      })) ?? user;
-    }
-
-    if (!user) {
-      return res.redirect(
-        frontendErrorRedirect(redirectTo, "Use the invitation link sent by First Registrars PMO to sign in with Google."),
-      );
-    }
-
-    return res.redirect(frontendSuccessRedirect(redirectTo, sanitizeUser(user)));
+    return res.redirect(frontendSuccessRedirect(redirectTo, sanitizeUser(vendor.user)));
   } catch (e) {
     logger.error({ err: e }, "Google OAuth failed");
     const message = e instanceof Error ? e.message : "Google sign-in failed. Please try again.";

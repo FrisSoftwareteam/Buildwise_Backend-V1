@@ -63,7 +63,7 @@ function vendorInviteEmail(input: {
     "Open this invitation in your browser (do not paste it into Google):",
     `<${input.link}>`,
     "",
-    "Then choose Continue with Google, using the Google account this invitation was sent to.",
+    "Then choose Continue with Microsoft or Continue with Google, using the account this invitation was sent to.",
     "",
     "— First Registrars PMO",
   ].join("\n");
@@ -76,7 +76,7 @@ function vendorInviteEmail(input: {
     `<p><a href="${escapeHtml(input.link)}" style="display:inline-block;background:#c4a747;color:#0f1c2e;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Sign in to BuildWise</a></p>`,
     `<p>If the button does not work, copy this full address into your browser address bar. Do not paste it into Google search:</p>`,
     `<p><a href="${escapeHtml(input.link)}">${escapeHtml(input.link)}</a></p>`,
-    "<p>Use the Google account this invitation was sent to.</p>",
+    "<p>Use the Microsoft or Google account this invitation was sent to.</p>",
     "<p>— First Registrars PMO</p>",
   ].join("");
 
@@ -96,7 +96,7 @@ router.post("/vendor-invites", async (req, res) => {
       return res.status(400).json({ error: "Vendor company name is required" });
     }
     if (emails.length === 0) {
-      return res.status(400).json({ error: "Add at least one vendor Google email." });
+      return res.status(400).json({ error: "Add at least one vendor sign-in email." });
     }
     if (emails.length > 2) {
       return res.status(400).json({ error: "A vendor account can have at most two sign-in emails." });
