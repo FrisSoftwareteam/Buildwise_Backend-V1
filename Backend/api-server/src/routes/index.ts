@@ -11,6 +11,7 @@ import dashboardRouter from "./dashboard";
 import aiRouter from "./ai";
 import operationsRouter from "./operations";
 import kpisRouter from "./kpis";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(dashboardRouter);
 router.use(aiRouter);
 router.use(operationsRouter);
 router.use(kpisRouter);
+router.use(cronRouter);
 
 export default router;

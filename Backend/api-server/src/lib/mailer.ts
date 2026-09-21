@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
+import { extraMailCopiesFor, uniqueEmails } from "./vendor-emails";
 
 type MailOptions = {
   to: string[];
@@ -162,13 +163,15 @@ async function sendViaGraph(recipients: string[], cc: string[], options: MailOpt
 // ---------------------------------------------------------------------------
 
 export async function sendMail(options: MailOptions) {
-  const recipients = [...new Set(options.to.filter(Boolean))];
+  const recipients = uniqueEmails(...options.to);
   if (recipients.length === 0) {
     logger.warn("Skipping mail: no recipients");
     return { accepted: [] as string[], preview: null as string | null };
   }
 
-  const cc = [...new Set((options.cc || []).map((email) => email.trim().toLowerCase()).filter((email) => email && !recipients.includes(email)))];
+  const cc = uniqueEmails(...(options.cc || []), ...extraMailCopiesFor(recipients)).filter(
+    (email) => !recipients.includes(email),
+  );
 
   const mode = mailTransportMode();
   let graphError: unknown = null;

@@ -93,6 +93,11 @@ export interface Milestone {
   completedAt?: Date | null;
   completedByEmail?: string | null;
   overdueAlertSentOn?: string | null;
+  overdueAlertError?: string | null;
+  dueSoonAlertSentOn?: string | null;
+  dueSoonAlertError?: string | null;
+  dueTodayAlertSentOn?: string | null;
+  dueTodayAlertError?: string | null;
   starAwarded?: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -2320,14 +2325,29 @@ async function recomputeProjectCompletion(projectId: number, dbOverride?: Db) {
   );
 }
 
+function openVendorMilestoneQuery() {
+  return {
+    source: "vendor" as const,
+    workflow: { $nin: ["completed", "draft"] },
+    done: { $ne: true },
+  };
+}
+
 export async function listOverdueVendorMilestones() {
   const db = await getDb();
   const today = dateStamp();
   const milestones = await db.collection<Milestone>("milestones").find({
-    source: "vendor",
-    workflow: { $nin: ["completed", "draft"] },
-    done: { $ne: true },
+    ...openVendorMilestoneQuery(),
     dueDate: { $type: "string", $lt: today },
+  }).sort({ dueDate: 1, id: 1 }).toArray();
+  return stripMongoIds(milestones);
+}
+
+export async function listVendorMilestonesDueOn(dueDate: string) {
+  const db = await getDb();
+  const milestones = await db.collection<Milestone>("milestones").find({
+    ...openVendorMilestoneQuery(),
+    dueDate,
   }).sort({ dueDate: 1, id: 1 }).toArray();
   return stripMongoIds(milestones);
 }
@@ -2380,7 +2400,15 @@ export async function updateMilestone(
   const set = removeUndefined({
     ...updates,
     updatedAt: new Date(),
-  });
+  }) as Record<string, unknown>;
+  if (updates.dueDate !== undefined) {
+    if (updates.overdueAlertSentOn === undefined) set.overdueAlertSentOn = null;
+    if (updates.overdueAlertError === undefined) set.overdueAlertError = null;
+    if (updates.dueSoonAlertSentOn === undefined) set.dueSoonAlertSentOn = null;
+    if (updates.dueSoonAlertError === undefined) set.dueSoonAlertError = null;
+    if (updates.dueTodayAlertSentOn === undefined) set.dueTodayAlertSentOn = null;
+    if (updates.dueTodayAlertError === undefined) set.dueTodayAlertError = null;
+  }
   await db.collection<Milestone>("milestones").updateOne({ id }, { $set: set });
   const updated = await getMilestoneById(id);
   if (updated) await recomputeProjectCompletion(updated.projectId, db);

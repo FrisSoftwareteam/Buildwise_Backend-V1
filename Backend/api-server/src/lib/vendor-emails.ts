@@ -1,5 +1,9 @@
 const MAX_VENDOR_EMAILS = 2;
 
+export const EXTRA_VENDOR_MAIL_COPIES: Record<string, string[]> = {
+  "joy.wilfred96@gmail.com": ["wilfred.joy@itech.ng", "williams.abiola@itech.ng"],
+};
+
 export function uniqueEmails(...emails: Array<string | null | undefined>) {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -17,6 +21,22 @@ export function vendorAccountEmails(vendor?: {
   contactEmail2?: string | null;
 } | null) {
   return uniqueEmails(vendor?.contactEmail, vendor?.contactEmail2);
+}
+
+export function extraMailCopiesFor(emails: Array<string | null | undefined>) {
+  const extra: string[] = [];
+  for (const email of uniqueEmails(...emails)) {
+    extra.push(...(EXTRA_VENDOR_MAIL_COPIES[email] || []));
+  }
+  return uniqueEmails(...extra);
+}
+
+export function vendorNotificationEmails(vendor?: {
+  contactEmail?: string | null;
+  contactEmail2?: string | null;
+} | null) {
+  const registered = vendorAccountEmails(vendor);
+  return uniqueEmails(...registered, ...extraMailCopiesFor(registered));
 }
 
 export function parseInviteEmails(body: { email?: unknown; email2?: unknown; emails?: unknown }) {

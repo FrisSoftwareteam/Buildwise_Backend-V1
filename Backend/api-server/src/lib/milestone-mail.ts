@@ -7,7 +7,7 @@ import {
 import { sendMail } from "./mailer";
 import { PMO_INVITE_CC } from "./pmo-invite-cc";
 import { SUPER_ADMIN_EMAIL } from "./super-admin";
-import { vendorAccountEmails } from "./vendor-emails";
+import { vendorNotificationEmails } from "./vendor-emails";
 
 function publicWebUrl() {
   return (
@@ -106,10 +106,11 @@ export async function notifyMilestoneReviewRequested(milestone: Milestone, vendo
 export async function notifyMilestoneCompleted(milestone: Milestone, vendorName: string, stars: number) {
   const vendor = milestone.vendorId ? await getVendorById(milestone.vendorId) : null;
   const project = await getProjectById(milestone.projectId);
-  const to = vendorAccountEmails(vendor);
+  const to = vendorNotificationEmails(vendor);
   if (to.length === 0) return;
   await sendMail({
     to,
+    cc: PMO_INVITE_CC,
     subject: `Milestone completed: ${milestone.title}`,
     text: [
       `Hello ${vendor.contactName || vendorName},`,
@@ -122,12 +123,58 @@ export async function notifyMilestoneCompleted(milestone: Milestone, vendorName:
   });
 }
 
+export async function notifyVendorMilestoneDue(milestone: Milestone, kind: "soon" | "today") {
+  const project = await getProjectById(milestone.projectId);
+  const vendor = milestone.vendorId ? await getVendorById(milestone.vendorId) : null;
+  const vendorEmails = vendorNotificationEmails(vendor);
+  if (vendorEmails.length === 0) {
+    throw new Error("No vendor email on file");
+  }
+
+  const due = formatDate(milestone.dueDate);
+  const product = project?.name || "your assigned product";
+  const greeting = vendor?.contactName || vendor?.name || "there";
+  const link = `${publicWebUrl()}/projects/${milestone.projectId}`;
+  const isToday = kind === "today";
+  const subject = isToday
+    ? `Milestone due today: ${milestone.title}`
+    : `Milestone due in 3 days: ${milestone.title}`;
+  const lead = isToday
+    ? `This is a prompt to submit “${milestone.title}” on ${product}. It is due today (${due}).`
+    : `This is a prompt to submit “${milestone.title}” on ${product}. It is due in 3 days (${due}).`;
+
+  await sendMail({
+    to: vendorEmails,
+    cc: PMO_INVITE_CC,
+    subject,
+    text: [
+      `Hello ${greeting},`,
+      "",
+      lead,
+      "",
+      "Open BuildWise and submit or update this milestone before the timeline is missed.",
+      link,
+      "",
+      "— First Registrars PMO",
+    ].join("\n"),
+    html: [
+      `<p>Hello ${greeting},</p>`,
+      `<p>${lead}</p>`,
+      `<p><strong>Product:</strong> ${product}<br>`,
+      `<strong>Milestone:</strong> ${milestone.title}<br>`,
+      `<strong>Due date:</strong> ${due}</p>`,
+      `<p><a href="${link}" style="display:inline-block;background:#c4a747;color:#0f1c2e;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Open in BuildWise</a></p>`,
+      "<p>— First Registrars PMO</p>",
+    ].join(""),
+  });
+}
+
 export async function notifyVendorMilestoneOverdue(milestone: Milestone) {
   const project = await getProjectById(milestone.projectId);
   const vendor = milestone.vendorId ? await getVendorById(milestone.vendorId) : null;
   const vendorName = vendor?.name || "A vendor";
   const missedDate = formatDate(milestone.dueDate);
-  const vendorEmails = vendorAccountEmails(vendor);
+  const vendorEmails = vendorNotificationEmails(vendor);
   const staff = await staffRecipients(vendorEmails[0]);
 
   await sendMail({
@@ -161,6 +208,7 @@ export async function notifyVendorMilestoneOverdue(milestone: Milestone) {
   if (vendorEmails.length > 0) {
     await sendMail({
       to: vendorEmails,
+      cc: PMO_INVITE_CC,
       subject: `Caution: you missed the milestone date ${missedDate}`,
       text: [
         `Hello ${vendor.contactName || vendor.name},`,
